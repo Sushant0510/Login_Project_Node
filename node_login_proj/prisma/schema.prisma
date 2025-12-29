@@ -3,15 +3,1400 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
 model users {
-  id         Int      @id @default(autoincrement())
-  email      String              // ❌ NOT unique
-  username   String   @unique    // ✅ UNIQUE
-  password   String
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  ID                   Int      @id @default(autoincrement())
+  company_name         String   @db.VarChar(100)
+  brand_name           String   @db.VarChar(100)
+  owner_name           String   @db.VarChar(100)
+  mobile               String   @db.VarChar(12)
+  email                String   @db.VarChar(50)
+  pan_number           String   @db.VarChar(12)
+  aadhar_number        String?  @db.VarChar(120)
+  documents            String?  @db.VarChar(200)
+  address              String?  @db.Text
+  account_number       String   @db.VarChar(25)
+  ifsc_code            String   @db.VarChar(20)
+  bank_name            String   @db.VarChar(50)
+  value1               String   @default("1804") @db.VarChar(50)
+  value2               String   @default("1805") @db.VarChar(50)
+  value3               Float    @default(3) @db.Float
+  value4               Float    @default(0) @db.Float
+  value5               Float    @default(0)
+  balance              Float
+  commission           Float
+  pin                  String   @default("7777") @db.VarChar(9)
+  admin_id             Int
+  block                Int      @default(0)
+  status               Int      @default(0)
+  password             String   @db.VarChar(100)
+  type                 String   @db.VarChar(100)
+  portal_charge        Float    @default(0) @db.Float
+  aeps_plan_id         Int      @default(1806)
+  api_token            String?  @db.VarChar(255)
+  callback_url         String?  @db.Text
+  upi_callback         String?  @db.Text
+  upi_bal              Float?   @default(0)
+  unique_id            String?  @db.VarChar(100)
+  pincode              String?  @db.VarChar(7)
+  cap_balance          Float?   @default(0) @db.Float
+  payout_bal           Float?   @default(0)
+  matm_bal             Float?   @default(0)
+  key                  String?  @db.Text
+  aeps_status          String   @default("false") @db.VarChar(20)
+  pipe                 String   @default("bank1") @db.VarChar(50)
+  date                 DateTime @default(now()) @db.DateTime(0)
+  matm_plan_id         Int?     @default(1806)
+  upi_transfer_plan_id Int?     @default(1806)
+  upi_collect_plan_id  Int?     @default(1806)
+  payout_plan_id       Int?     @default(1806)
+  sale_force_id        String?  @db.VarChar(100)
+  payout_pipe          String?  @db.VarChar(20)
+  enforce_pipe         Int?     @default(0) @db.TinyInt
+
+  @@map("users")
+}
+
+model action_status {
+  ID              Int     @id @default(autoincrement())
+  status          String? @db.VarChar(100)
+  response_status String? @db.VarChar(100)
+  message         String? @db.VarChar(255)
+  provider        String? @db.VarChar(100)
+}
+
+model aeps_bank {
+  ID        Int     @id @default(autoincrement())
+  bank_id   Int?
+  bank_name String? @db.VarChar(100)
+  iinno     Int?
+}
+
+model aeps_error_procedure {
+  ID      Int    @id @default(autoincrement())
+  message String @db.VarChar(255)
+  status  String @db.VarChar(255)
+}
+
+model aeps_onboarding {
+  ID                  Int     @id @default(autoincrement())
+  onboarding_status   String? @default("false") @db.VarChar(20)
+  onboarding_response String? @db.LongText
+  ekyc_status         String? @default("false") @db.VarChar(20)
+  otp_status          String? @default("false") @db.VarChar(20)
+  primaryKeyId        String? @db.VarChar(45)
+  encodeFPTxnId       String? @db.VarChar(45)
+  unique_id           String? @db.VarChar(45)
+  date                String? @db.VarChar(45)
+  time                String? @db.VarChar(45)
+  biometric_status    String? @default("false") @db.VarChar(45)
+  deviceIMEI          String? @db.VarChar(100)
+  aadhaar             String? @db.VarChar(16)
+  morpho_url          String? @db.VarChar(255)
+  mantra_url          String? @db.VarChar(255)
+  startek_url         String? @db.VarChar(255)
+  api_type            String? @default("TAPIT") @db.VarChar(45)
+}
+
+model aeps_onboarding_charges {
+  ID         Int    @id @default(autoincrement())
+  charges    Float? @default(0) @db.Float
+  user_id    Int?   @default(0)
+  api_charge Float? @default(0) @db.Float
+}
+
+model all_operator_balance {
+  ID     Int   @id @default(autoincrement())
+  ezypay Float @db.Float
+  rb     Float @db.Float
+  sp     Float
+  cp     Float @db.Float
+  eko    Float @db.Float
+  o2pay  Float @db.Float
+}
+
+model api_logs {
+  ID         Int     @id @default(autoincrement())
+  type       String  @db.VarChar(30)
+  request_id String? @db.VarChar(255)
+  request    String  @db.Text
+  response   String  @db.Text
+  date       String? @db.VarChar(20)
+  time       String? @db.VarChar(20)
+  status     String? @default("0") @db.VarChar(50)
+  mobile     String? @db.VarChar(20)
+  tid        String? @db.VarChar(45)
+  delay      Float?  @db.Float
+  action     String? @db.VarChar(50)
+  stm_id     BigInt? @default(0)
+  api_id     Int?
+  txn_type   String? @db.VarChar(100)
+  api_number Int?
+}
+
+model api_payout {
+  ID              BigInt  @id @default(autoincrement())
+  spr_id          String? @db.VarChar(45)
+  status          String  @db.VarChar(100)
+  message         String  @db.VarChar(300)
+  amount          Float   @db.Float
+  mode            Int     @default(1)
+  prev_bal        Float
+  balance         Float   @default(0)
+  total_amt       Float?  @default(0) @db.Float
+  tid             String  @db.VarChar(25)
+  bank_ref        String  @default("-") @db.VarChar(50)
+  txn_type        String  @default("-") @db.VarChar(50)
+  mobile          String  @default("-") @db.VarChar(50)
+  date            String  @db.VarChar(10)
+  time            String  @db.VarChar(10)
+  admin_id        Int     @default(0)
+  company_id      Int     @default(0)
+  distributor_id  Int     @default(0)
+  retailer_id     Int     @default(0)
+  admin_com       Float   @default(0) @db.Float
+  company_com     Float   @default(0) @db.Float
+  distributor_com Float   @default(0) @db.Float
+  retailer_com    Float   @default(0) @db.Float
+  tds             Float?  @default(0) @db.Float
+  api_type        String  @default("DEFAULT") @db.VarChar(30)
+  api_com         Float   @default(0) @db.Float
+  api_mode        Int     @default(0)
+  refund          Int     @default(0)
+  request_id      String  @default("0") @db.VarChar(50)
+  base_rate       Float?  @default(0) @db.Float
+  bank_rrn        String? @db.VarChar(45)
+  api_ref_id      String? @db.VarChar(45)
+  response_code   String? @db.VarChar(45)
+  terminal_id     String? @db.VarChar(100)
+  service_charge  Float?  @default(0) @db.Float
+  cardno          String? @db.VarChar(100)
+  retailer_charge Float?  @default(0) @db.Float
+  service         String? @db.VarChar(50)
+}
+
+model api_statements {
+  ID            BigInt  @id @default(autoincrement())
+  status        String  @db.VarChar(100)
+  message       String  @db.VarChar(300)
+  amount        Float   @db.Float
+  mode          Int     @default(1)
+  tid           String  @db.VarChar(25)
+  api_tid       String  @default("-") @db.VarChar(50)
+  channel       String  @default("-") @db.VarChar(20)
+  operator_name String  @default("-") @db.VarChar(100)
+  customer_name String  @default("-") @db.VarChar(50)
+  account       String  @default("-") @db.VarChar(30)
+  mobile        String  @default("-") @db.VarChar(12)
+  date          String  @db.VarChar(10)
+  time          String  @db.VarChar(10)
+  retailer_id   Int     @default(0)
+  api_type      String  @default("DEFAULT") @db.VarChar(30)
+  refund        Int     @default(0)
+  op_id         Int?
+  circle_id     Int?
+  api_id        Int?
+  request_id    String  @default("0") @db.VarChar(50)
+  switch        Int     @default(0)
+  service       String? @db.VarChar(50)
+  remark        String? @db.Text
+  provider      String? @default("UKN") @db.VarChar(45)
+  ts            BigInt? @default(0)
+}
+
+model apis_balance {
+  ID            Int     @id @default(autoincrement())
+  api_id        Float   @default(0) @db.Float
+  api_type      String  @db.VarChar(20)
+  balance       Float   @default(0)
+  balance_alert Float   @default(0) @db.Float
+  mobile        String? @db.VarChar(12)
+  email         String? @db.VarChar(100)
+  messsage      String? @db.Text
+  api_token     String? @db.VarChar(200)
+}
+
+model apiusers {
+  ID               Int     @id @default(autoincrement())
+  ApiUser          String? @db.VarChar(255)
+  PanCard          String? @db.VarChar(20)
+  AadhaarCard      String? @db.VarChar(20)
+  AgentID          String? @db.VarChar(11)
+  AgentName        String? @db.VarChar(255)
+  Mobile           String? @db.VarChar(15)
+  MerchantLoginId  String? @db.VarChar(20)
+  MerchantLoginPin String? @db.VarChar(100)
+  Latitude         String? @db.VarChar(100)
+  Longitude        String? @db.VarChar(100)
+  Address          String? @db.VarChar(255)
+  ShopName         String? @db.VarChar(255)
+  PinCode          String? @db.VarChar(10)
+  IPAddress        String? @db.VarChar(15)
+  Status           String? @db.VarChar(20)
+  EKYC             String? @db.VarChar(255)
+}
+
+model app_version {
+  ID         Int      @id @default(autoincrement())
+  version    String   @db.VarChar(100)
+  token      String   @db.VarChar(255)
+  user_id    Int?
+  ip_address String   @db.VarChar(100)
+  date       DateTime @default(now()) @db.DateTime(0)
+  brand      String?  @default("BRANCHX") @db.VarChar(100)
+}
+
+model approval_limit {
+  ID       Int   @id @default(autoincrement())
+  user_id  Int   @default(0)
+  admin_id Int   @default(0)
+  amount   Float @default(0) @db.Float
+}
+
+model balance_request {
+  ID          BigInt  @id @default(autoincrement())
+  name        String  @db.VarChar(150)
+  date        String  @db.VarChar(10)
+  time        String  @db.VarChar(12)
+  amount      Float   @db.Float
+  mode        String  @db.VarChar(30)
+  tid         String  @db.VarChar(30)
+  utr         String? @db.VarChar(50)
+  bank        String  @db.VarChar(50)
+  trans_date  String  @db.VarChar(20)
+  remark      String  @db.VarChar(150)
+  reason      String? @db.VarChar(255)
+  admin_id    Int
+  user_id     Int
+  status      String  @default("PENDING") @db.VarChar(30)
+  approval    Int     @default(0)
+  employee_id Int     @default(0)
+}
+
+model balance_request_bank {
+  ID             Int     @id @default(autoincrement())
+  bank_name      String? @db.VarChar(100)
+  account_number String? @db.VarChar(50)
+  ifsc_code      String? @db.VarChar(15)
+  status         Int     @default(0) @db.TinyInt
+}
+
+model bank {
+  ID            Int     @id @default(autoincrement())
+  bank_name     String  @db.VarChar(200)
+  keyword       String  @db.VarChar(100)
+  ifsc          String  @db.VarChar(50)
+  maxlength     Int
+  minlength     Int     @default(6)
+  verify_status Int     @default(1)
+  mode          Int
+  credit_card   Int
+  bankid        String? @db.VarChar(45)
+}
+
+model billers {
+  ID                Int     @id @default(autoincrement())
+  opcode            String  @db.VarChar(20)
+  biller_name       String? @db.VarChar(100)
+  commission        String? @db.VarChar(20)
+  input_params      String? @db.VarChar(100)
+  amount_exactness  String? @db.VarChar(20)
+  fetch_requirement String? @db.VarChar(20)
+  service           String? @db.VarChar(100)
+}
+
+model block_list {
+  ID         Int     @id @default(autoincrement())
+  mobile     String? @db.VarChar(12)
+  ip_address String? @db.VarChar(100)
+  date       String? @db.VarChar(20)
+  time       String? @db.VarChar(20)
+  attemp     Int?    @default(0)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model ci_sessions {
+  id         String @db.VarChar(128)
+  ip_address String @db.VarChar(45)
+  timestamp  Int    @default(0) @db.UnsignedInt
+  data       Bytes  @db.Blob
+
+  @@index([timestamp], map: "ci_sessions_timestamp")
+  @@ignore
+}
+
+model commission {
+  ID                  Int     @id @default(autoincrement())
+  plan_id             Int     @default(0)
+  amt_from            Float   @default(0) @db.Float
+  amt_to              Float   @default(0) @db.Float
+  com_type            String  @default("flat") @db.VarChar(50)
+  service_charge      Float   @default(0) @db.Float
+  retailer_charge     Float   @default(0) @db.Float
+  retailer_commission Float   @default(0) @db.Float
+  dist                Float   @default(0) @db.Float
+  company             Float   @default(0) @db.Float
+  super               Float?  @default(0) @db.Float
+  admin               Float   @default(0) @db.Float
+  api                 Float   @default(0) @db.Float
+  user_id             Int     @default(0)
+  base_rate           Float?  @default(0) @db.Float
+  service             String? @db.VarChar(45)
+}
+
+model commission_dmt {
+  ID        Int     @id @default(autoincrement())
+  plan_id   Int
+  amt_from  Float   @default(0) @db.Float
+  amt_to    Float   @db.Float
+  com_type  String? @default("flat") @db.VarChar(20)
+  charges   Float   @db.Float
+  retailer  Float   @default(0) @db.Float
+  dist      Float   @default(0) @db.Float
+  company   Float   @default(0) @db.Float
+  super     Float?  @default(0) @db.Float
+  admin     Float   @default(0) @db.Float
+  api       Float   @default(0) @db.Float
+  user_id   Int     @default(0)
+  base_rate Float?  @default(0) @db.Float
+}
+
+model commission_mt {
+  ID          Int    @id @default(autoincrement())
+  plan_id     Int
+  plan_amount Float  @db.Float
+  charges     Float  @db.Float
+  retailer    Float  @db.Float
+  dist        Float  @db.Float
+  company     Float  @db.Float
+  admin       Float  @db.Float
+  api         Float  @db.Float
+  Comment     String @db.VarChar(100)
+  date        String @db.VarChar(10)
+  user_id     Int    @default(1)
+}
+
+model commission_settlement {
+  ID              BigInt  @id @default(autoincrement())
+  admin_id        Int     @default(0)
+  super_id        Int     @default(0)
+  company_id      Int     @default(0)
+  distributor_id  Int     @default(0)
+  retailer_id     Int     @default(0)
+  admin_com       Int     @default(0)
+  super_com       Int     @default(0)
+  company_com     Int     @default(0)
+  distributor_com Int     @default(0)
+  retailer_com    Int     @default(0)
+  status          Int     @default(0) @db.TinyInt
+  tid             String? @db.VarChar(50)
+}
+
+model credential {
+  ID         Int     @id @default(autoincrement())
+  type       String? @db.VarChar(200)
+  username   String? @db.VarChar(100)
+  password   String? @db.VarChar(100)
+  api_token  String? @db.VarChar(255)
+  app_id     String? @db.VarChar(255)
+  app_secret String? @db.LongText
+  prod_url   String? @db.VarChar(255)
+  test_url   String? @db.VarChar(255)
+  header     String? @db.VarChar(255)
+  params     String? @db.Text
+  status     String  @default("Disable") @db.VarChar(20)
+  ip_address String? @db.VarChar(45)
+  method     String? @db.VarChar(8)
+}
+
+model cron_request {
+  ID           Int     @id @default(autoincrement())
+  system_tid   String  @db.VarChar(25)
+  api_tid      String? @db.VarChar(25)
+  date         String  @db.VarChar(10)
+  time         String  @db.VarChar(10)
+  user_id      Int
+  request      String  @db.Text
+  response     String? @db.Text
+  status       String  @db.VarChar(100)
+  type         String  @db.VarChar(25)
+  by           Int     @default(0)
+  mpesa_mobile String? @db.VarChar(12)
+  r_mobile     String  @db.VarChar(12)
+  amount       Float   @db.Float
+  approval     Int     @default(0)
+  stm_id       BigInt  @default(0)
+  txtime       BigInt
+}
+
+model debug {
+  ID     Int     @id @default(autoincrement())
+  mobile String? @db.VarChar(12)
+  debug  Int     @default(0)
+  port   Int     @default(8000)
+}
+
+model dms_persistent_objects {
+  DB_NAME      String @db.VarChar(65)
+  TABLE_NAME   String @db.VarChar(65)
+  OBJ_NAME     String @db.VarChar(65)
+  OBJ_TYPE     String @db.Char(1)
+  CREATE_STMT  String @db.Text
+  CREATE_ORDER Int?
+  ACTIVITY_ID  String @db.Char(36)
+
+  @@id([DB_NAME, TABLE_NAME, OBJ_NAME, OBJ_TYPE])
+}
+
+model dmt_amt_switching {
+  ID       Int     @id @default(autoincrement())
+  from_amt Float?  @default(0) @db.Float
+  to_amt   Float?  @default(0) @db.Float
+  api      String? @default("NSDL") @db.VarChar(45)
+}
+
+model dmt_beneficiary {
+  beneficiary_id Int     @id @default(autoincrement())
+  remitter_id    BigInt?
+  account        String? @db.VarChar(45)
+  ifsc           String? @db.VarChar(12)
+  bank           String? @db.VarChar(100)
+  mobile         String? @db.VarChar(12)
+  name           String? @db.VarChar(100)
+  verified       Int?    @default(0)
+  bank_code      String? @db.VarChar(50)
+  smartpay       Int?    @default(0)
+  tramo_bene_id  String? @db.VarChar(100)
+  ezypay_bene_id String? @db.VarChar(100)
+}
+
+model dmt_register {
+  remitter_id    Int     @id @default(autoincrement())
+  name           String? @db.VarChar(50)
+  mobile         String? @db.VarChar(12)
+  limit          Float?  @default(75000) @db.Float
+  verified       Int?    @default(0)
+  pin_code       String? @db.VarChar(12)
+  otp            String? @db.VarChar(6)
+  address        String? @db.VarChar(100)
+  smartpay_limit Float?  @default(25000) @db.Float
+  ezypay_limit   Int     @default(25000)
+}
+
+model dmt_switch {
+  ID       Int    @id @default(autoincrement())
+  provider String @db.VarChar(100)
+  user_id  Int    @default(0)
+  active   Int    @default(1) @db.TinyInt
+}
+
+model duplicate_request {
+  request_id BigInt @id @default(autoincrement())
+}
+
+model employee {
+  ID       Int     @id @default(autoincrement())
+  name     String  @db.VarChar(100)
+  email    String  @db.VarChar(70)
+  password String  @db.VarChar(70)
+  type     String  @default("employee") @db.VarChar(20)
+  mobile   String  @db.VarChar(12)
+  admin_id Int?    @default(0)
+  status   Int?    @default(0)
+  pin      String? @default("1234") @db.VarChar(10)
+}
+
+model ifsc_correction {
+  ID           Int     @id @default(autoincrement())
+  ifsc         String? @db.VarChar(12)
+  ifsc_updated String? @db.VarChar(12)
+  status       String  @default("PENDING") @db.VarChar(100)
+}
+
+model kyc_charges {
+  ID             Int      @id @default(autoincrement())
+  userID         Int?
+  service_id     Int?
+  charge_type    String?  @db.VarChar(45)
+  service_charge Decimal? @db.Decimal(8, 2)
+  api            Decimal? @db.Decimal(8, 2)
+
+  @@index([ID], map: "idx_kyc_charges_ID")
+}
+
+model kyc_details {
+  ID                     Int     @id @default(autoincrement())
+  entityID               Int
+  entityType             String  @db.VarChar(45)
+  mobile                 String? @db.VarChar(45)
+  mobileVerified         Int?    @db.TinyInt
+  panDetails             String? @db.VarChar(45)
+  panBase64              String? @db.VarChar(500)
+  panVerified            Int?    @db.TinyInt
+  aadhaarDetails         String? @db.VarChar(45)
+  aadhaarBase64          String? @db.VarChar(500)
+  aadhaarVerified        Int?    @db.TinyInt
+  passportDetails        String? @db.VarChar(45)
+  passportBase64         String? @db.VarChar(500)
+  passportVerified       Int?    @db.TinyInt
+  drivingLicenseDetails  String? @db.VarChar(45)
+  dlBase64               String? @db.VarChar(500)
+  drivingLicenseVerified Int?    @db.TinyInt
+  gstDetails             String? @db.VarChar(100)
+  gstVerified            Int?    @db.TinyInt
+  address                String? @db.VarChar(1000)
+
+  @@index([ID], map: "idx_kyc_details_ID")
+}
+
+model kyc_services {
+  ID      Int     @id @default(autoincrement())
+  service String? @db.VarChar(50)
+
+  @@index([ID], map: "idx_kyc_services_ID")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model limit {
+  ID   Int?
+  type String? @db.VarChar(100)
+  min  Float?  @db.Float
+  max  Float?  @db.Float
+
+  @@ignore
+}
+
+model login_ip {
+  ID          BigInt @id @default(autoincrement())
+  ip          String @db.VarChar(15)
+  type        String @db.VarChar(15)
+  user_id     BigInt
+  outlet_name String @db.VarChar(100)
+  date        String @db.VarChar(10)
+  time        String @db.VarChar(10)
+}
+
+model low_balance_alert {
+  ID        Int    @id @default(autoincrement())
+  timestamp String @db.VarChar(50)
+  mobile    String @db.VarChar(22)
+  status    String @default("on") @db.VarChar(10)
+  message   String @db.VarChar(160)
+}
+
+model master_otp {
+  ID      Int     @id @default(autoincrement())
+  user_id Int?
+  otp     Int?
+  date    String? @db.VarChar(12)
+}
+
+model matm_order {
+  ID           Int     @id @default(autoincrement())
+  user_id      Int?    @default(0)
+  qty          Int?    @default(0)
+  price        Float?  @default(0) @db.Float
+  total        String? @default("0") @db.VarChar(45)
+  address      String? @db.Text
+  status       String? @default("ORDERED") @db.VarChar(45)
+  date         String? @db.VarChar(15)
+  time         String? @db.VarChar(15)
+  device_model String? @db.VarChar(100)
+  tid          String? @db.VarChar(100)
+  api_type     String? @default("CFRE") @db.VarChar(45)
+}
+
+model mosambee_callback {
+  ID            BigInt  @id @default(autoincrement())
+  amount        Float?  @db.Float
+  rrn           String? @db.VarChar(255)
+  mobile        String? @db.VarChar(50)
+  status        String? @default("PENDING") @db.VarChar(20)
+  message       String? @db.VarChar(255)
+  response      String? @db.LongText
+  date          String? @db.VarChar(20)
+  time          String? @db.VarChar(20)
+  sent_callback String? @db.LongText
+  txn_type      String? @db.VarChar(50)
+}
+
+model my_info {
+  ID      Int    @id @default(autoincrement())
+  code    String @db.VarChar(100)
+  details String @db.Text
+}
+
+model new_api {
+  ID                     Int     @id @default(autoincrement())
+  name                   String  @db.VarChar(250)
+  username               String  @db.VarChar(250)
+  password               String  @db.VarChar(200)
+  api_code               String  @db.VarChar(150)
+  priority               String  @db.VarChar(150)
+  api_token              String  @db.VarChar(250)
+  url                    String  @db.VarChar(250)
+  headers                String? @db.Text
+  type                   String  @default("api") @db.VarChar(30)
+  request_params         String? @db.Text
+  response_params        String? @db.Text
+  params_values          String  @db.Text
+  method                 String? @db.VarChar(50)
+  callback_params        String? @db.Text
+  response_type          String  @db.VarChar(50)
+  domain                 String  @db.VarChar(255)
+  status_check_params    String? @db.Text
+  status_check_response  String? @db.Text
+  status_check_method    String? @default("get") @db.VarChar(20)
+  status_check_data_type String? @default("xml") @db.VarChar(20)
+  status_check_url       String? @db.Text
+}
+
+model new_circle {
+  ID          Int    @id @default(autoincrement())
+  name        String @db.VarChar(150)
+  circle_code String @db.VarChar(5)
+  call_by     String @db.VarChar(100)
+  short_name  String @db.VarChar(50)
+}
+
+model new_circle_wise_opcode {
+  ID          Int    @id @default(autoincrement())
+  circle_id   Int
+  operator_id Int
+  api_id      Int
+  opcode      String @db.VarChar(250)
+  status      String @db.VarChar(50)
+  com_type    String @default("flat") @db.VarChar(30)
+  commission  Float  @db.Float
+  params1     String @db.VarChar(50)
+  params2     String @db.VarChar(50)
+  params3     String @db.VarChar(50)
+}
+
+model new_circle_wise_switch {
+  ID          Int    @id @default(autoincrement())
+  userid      Int
+  operator_id Int
+  circle_id   Int
+  api_id      Int
+  date        String @db.VarChar(50)
+  status      String @db.VarChar(50)
+}
+
+model new_commission {
+  ID                  Int     @id @default(autoincrement())
+  plan_id             Int     @default(0)
+  amt_from            Float   @default(0) @db.Float
+  amt_to              Float   @default(0) @db.Float
+  com_type            String  @default("flat") @db.VarChar(50)
+  service_charge      Float   @default(0) @db.Float
+  retailer_charge     Float   @default(0) @db.Float
+  retailer_commission Float   @default(0) @db.Float
+  dist                Float   @default(0) @db.Float
+  company             Float   @default(0) @db.Float
+  super               Float?  @default(0) @db.Float
+  admin               Float   @default(0) @db.Float
+  api                 Float   @default(0) @db.Float
+  user_id             Int     @default(0)
+  base_rate           Float?  @default(0) @db.Float
+  service             String? @db.VarChar(45)
+}
+
+model new_denomination_switch {
+  ID          Int    @id @default(autoincrement())
+  userid      Int
+  operator_id Int
+  api_id      Int
+  amount      String @db.VarChar(100)
+  to_amount   Float  @db.Float
+  date        String @db.VarChar(50)
+  status      String @db.VarChar(50)
+}
+
+model new_error_code {
+  ID          Int     @id @default(autoincrement())
+  code        String  @db.VarChar(255)
+  msg         String  @db.VarChar(255)
+  description String? @db.VarChar(255)
+}
+
+model new_ezytm_data {
+  ID         Int    @id @default(autoincrement())
+  ERROR      String @db.VarChar(5)
+  STATUS     String @db.VarChar(5)
+  Mobile     String @db.VarChar(12)
+  Operator   String @db.VarChar(30)
+  OpCode     String @db.VarChar(5)
+  Circle     String @db.VarChar(30)
+  CircleCode String @db.VarChar(4)
+  Message    String @db.VarChar(50)
+}
+
+model new_fail_switch {
+  ID             Int    @id @default(autoincrement())
+  no_of_fail     Int
+  operator_id    Int
+  current_api_id Int
+  next_api_id    Int
+  date           String @db.VarChar(50)
+  status         String @db.VarChar(50)
+  delay          Int?   @default(0)
+}
+
+model new_operator {
+  ID            Int     @id @default(autoincrement())
+  operator      String  @db.VarChar(150)
+  op_code       String  @db.VarChar(10)
+  operator_code Int
+  service       String  @db.VarChar(50)
+  min_amount    Float   @db.Float
+  max_amount    Float   @db.Float
+  min_length    Float   @db.Float
+  max_length    Float   @db.Float
+  reject_amount String  @db.VarChar(256)
+  status        String  @default("deactive") @db.VarChar(50)
+  circle_mode   String  @default("database") @db.VarChar(50)
+  logo          String? @db.Text
+  circle_status String? @default("NO") @db.VarChar(10)
+}
+
+model new_pending_switch {
+  ID             Int    @id @default(autoincrement())
+  no_of_pending  Int
+  operator_id    Int
+  current_api_id Int
+  next_api_id    Int
+  date           String @db.VarChar(50)
+  status         String @db.VarChar(50)
+}
+
+model new_permission {
+  ID        Int     @id @default(autoincrement())
+  name      String  @db.VarChar(150)
+  staff_id  Int     @default(0)
+  adds      Int     @default(0)
+  updates   Int     @default(0)
+  deletes   Int     @default(0)
+  views     Int     @default(1)
+  file_name String? @db.VarChar(100)
+}
+
+model new_random_switch {
+  ID          Int    @id @default(autoincrement())
+  operator_id Int
+  api_id      Int
+  no_of_txn   Int
+  done_txn    Int
+  date        String @db.VarChar(50)
+  status      String @db.VarChar(50)
+}
+
+model new_rc_plans {
+  ID            Int     @id @default(autoincrement())
+  data          String? @db.LongText
+  operator_code Int?    @default(0)
+  circle_code   Int?    @default(0)
+  date          String? @db.VarChar(20)
+}
+
+model new_ticket {
+  ID           Int    @id @default(autoincrement())
+  user_id      Int
+  statement_id Int
+  remark       String @db.Text
+  response     String @db.Text
+  date         String @db.VarChar(50)
+}
+
+model new_user_commission {
+  ID          Int    @id @default(autoincrement())
+  operator_id Int
+  user_id     Int
+  com_type    String @db.VarChar(100)
+  commission  Float  @db.Float
+  per         Float  @db.Float
+  flat        Float  @db.Float
+  date        String @db.VarChar(100)
+}
+
+model new_user_log {
+  ID         Int      @id @default(autoincrement())
+  table_name String   @db.VarChar(100)
+  action     String   @db.VarChar(100)
+  user_id    BigInt
+  date       DateTime @db.Date
+  time       String   @db.VarChar(20)
+  action_id  BigInt
+  ip_address String   @db.VarChar(200)
+}
+
+model new_user_wise_switch {
+  ID          Int    @id @default(autoincrement())
+  user_id     Int
+  operator_id Int
+  api_1       String @db.VarChar(150)
+  api_2       String @db.VarChar(150)
+  api_3       String @db.VarChar(150)
+  api_4       String @db.VarChar(150)
+  api_5       String @db.VarChar(150)
+  api_6       String @db.VarChar(150)
+  status      String @default("Enable") @db.VarChar(150)
+}
+
+model notification {
+  ID  Int    @id @default(autoincrement())
+  msg String @db.Text
+}
+
+model operators {
+  ID           Int    @id @default(autoincrement())
+  company      String @db.VarChar(200)
+  type         String @db.VarChar(30)
+  img_operator String @db.VarChar(70)
+  api_type     String @default("CP") @db.VarChar(10)
+  op_code      String @db.VarChar(10)
+  extra_param  String @db.VarChar(20)
+  message      String @db.VarChar(200)
+  active       String @default("deactivate") @db.VarChar(30)
+}
+
+model outstanding_stm {
+  ID          BigInt @id @default(autoincrement())
+  amount      Float  @db.Float
+  date        String @db.VarChar(20)
+  time        String @db.VarChar(20)
+  dist_id     Int
+  retailer_id Int
+  remark      String @db.Text
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model partner_cap {
+  ID             Int?
+  cap            Float? @db.Float
+  instantpay_cap Float? @db.Float
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model partner_limit {
+  ID   Int?
+  type String? @db.VarChar(100)
+  min  Float?  @db.Float
+  max  Float?  @db.Float
+
+  @@ignore
+}
+
+model partner_merchants {
+  ID           Int       @id @default(autoincrement())
+  CompanyName  String?   @db.VarChar(255)
+  OwnerName    String?   @db.VarChar(255)
+  BrandName    String?   @db.VarChar(255)
+  MobileNumber String?   @db.VarChar(15)
+  EmailID      String?   @db.VarChar(255)
+  PartnerID    String?   @db.VarChar(100)
+  CreatedAt    DateTime? @default(now()) @db.Timestamp(0)
+  UpdatedAt    DateTime? @default(now()) @db.Timestamp(0)
+  Active       Int?      @default(1) @db.TinyInt
+}
+
+model payout {
+  ID              BigInt  @id @default(autoincrement())
+  spr_id          String? @db.VarChar(45)
+  status          String  @db.VarChar(100)
+  message         String  @db.VarChar(300)
+  amount          Float   @db.Float
+  mode            Int     @default(1)
+  prev_bal        Float
+  balance         Float
+  total_amt       Float?  @default(0) @db.Float
+  tid             String  @db.VarChar(25)
+  bank_ref        String  @default("-") @db.VarChar(50)
+  txn_type        String  @default("-") @db.VarChar(50)
+  mobile          String  @default("-") @db.VarChar(12)
+  date            String  @db.VarChar(10)
+  time            String  @db.VarChar(10)
+  admin_id        Int     @default(0)
+  company_id      Int     @default(0)
+  distributor_id  Int     @default(0)
+  retailer_id     Int     @default(0)
+  admin_com       Float   @default(0) @db.Float
+  company_com     Float   @default(0) @db.Float
+  distributor_com Float   @default(0) @db.Float
+  retailer_com    Float   @default(0) @db.Float
+  tds             Float?  @default(0) @db.Float
+  api_type        String  @default("DEFAULT") @db.VarChar(30)
+  api_com         Float   @default(0) @db.Float
+  api_mode        Int     @default(0)
+  refund          Int     @default(0)
+  request_id      String  @default("0") @db.VarChar(50)
+  base_rate       Float?  @default(0) @db.Float
+  bank_rrn        String? @db.VarChar(45)
+  api_ref_id      String? @db.VarChar(45)
+  response_code   String? @db.VarChar(45)
+  terminal_id     String? @db.VarChar(100)
+  service_charge  Float?  @default(0) @db.Float
+  cardno          String? @db.VarChar(100)
+  retailer_charge Float?  @default(0) @db.Float
+  recorn          Int     @default(0)
+}
+
+model payout_charges {
+  ID              Int     @id @default(autoincrement())
+  amt_from        Float?  @default(0) @db.Float
+  amt_to          Float?  @default(0) @db.Float
+  retailer_charge Float?  @default(0) @db.Float
+  api_charge      Float?  @default(0) @db.Float
+  base_rate       Float?  @default(0) @db.Float
+  admin_com       Float?  @default(0) @db.Float
+  user_id         BigInt? @default(0)
+  mode            String? @default("imps") @db.VarChar(45)
+}
+
+model pincode {
+  ID       Int    @id @default(autoincrement())
+  pin_code Int
+  city     String @db.VarChar(50)
+  states   String @db.VarChar(50)
+}
+
+model plans {
+  ID        Int    @id @default(autoincrement())
+  plan_name String @db.VarChar(100)
+  type      String @default("all") @db.VarChar(100)
+  user_id   Int?   @default(0)
+}
+
+model retailers {
+  id          Int               @id @default(autoincrement())
+  name        String            @db.VarChar(255)
+  email_id    String            @unique(map: "email_id") @db.VarChar(255)
+  address     String            @db.VarChar(500)
+  mobile_no   String            @unique(map: "mobile_no") @db.VarChar(15)
+  aadhar_no   String            @unique(map: "aadhar_no") @db.VarChar(12)
+  pan_no      String            @unique(map: "pan_no") @db.VarChar(10)
+  created_at  DateTime?         @default(now()) @db.Timestamp(0)
+  modified_at DateTime?         @default(now()) @db.Timestamp(0)
+  status      retailers_status? @default(Active)
+  partner_id  Int?
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model sale_force {
+  ID          Int      @default(0)
+  name        String?  @db.VarChar(255)
+  city        String?  @db.VarChar(100)
+  state       String?  @db.VarChar(100)
+  mobile      String?  @db.VarChar(12)
+  admin_id    Int?     @default(0)
+  type        String?  @db.VarChar(50)
+  date        DateTime @db.DateTime(0)
+  report_flag Int?     @default(0)
+
+  @@ignore
+}
+
+model services_filter {
+  ID       Int     @id @default(autoincrement())
+  service  String? @db.VarChar(45)
+  api_type String? @db.VarChar(45)
+}
+
+model settings {
+  ID           Int     @id @default(autoincrement())
+  company_name String  @db.VarChar(100)
+  type         String  @db.VarChar(50)
+  theme_name   String  @db.VarChar(150)
+  logo         String  @db.VarChar(150)
+  white_logo   String? @db.VarChar(100)
+  favicon      String  @db.VarChar(150)
+  user_id      Int
+  domain       String  @db.VarChar(100)
+  address      String  @db.Text
+  email        String  @db.VarChar(100)
+  mobile       String  @db.VarChar(20)
+  slogan       String? @db.VarChar(100)
+}
+
+model slab_pipe {
+  ID       Int     @id @default(autoincrement())
+  amt_from Int?    @default(0)
+  amt_to   Int?    @default(0)
+  pipe     String? @db.VarChar(20)
+}
+
+model sms_formate {
+  ID          Int     @id @default(autoincrement())
+  action      String  @db.VarChar(100)
+  message     String  @db.VarChar(255)
+  template_id String  @db.VarChar(255)
+  EntityId    String? @db.VarChar(100)
+  sender_id   String? @db.VarChar(45)
+  user_id     Int?    @default(0)
+  key         String? @db.VarChar(100)
+}
+
+model statements {
+  ID              BigInt  @id @default(autoincrement())
+  status          String  @db.VarChar(100)
+  message         String  @db.VarChar(300)
+  amount          Float   @db.Float
+  mode            Int     @default(1)
+  prev_bal        Float?
+  balance         Float?
+  tid             String  @db.VarChar(25)
+  api_tid         String  @default("-") @db.VarChar(50)
+  channel         String  @default("-") @db.VarChar(20)
+  operator_name   String  @default("-") @db.VarChar(100)
+  customer_name   String  @default("-") @db.VarChar(50)
+  account         String  @default("-") @db.VarChar(50)
+  mobile          String  @default("-") @db.VarChar(12)
+  date            String  @db.VarChar(10)
+  time            String  @db.VarChar(10)
+  admin_id        Int     @default(0)
+  super_id        Int?    @default(0)
+  company_id      Int     @default(0)
+  distributor_id  Int     @default(0)
+  retailer_id     Int     @default(0)
+  merchant_id     Int     @default(0)
+  admin_com       Float   @default(0) @db.Float
+  super_com       Float?  @default(0) @db.Float
+  company_com     Float   @default(0) @db.Float
+  distributor_com Float   @default(0) @db.Float
+  retailer_com    Float   @default(0) @db.Float
+  retailer_mode   Int     @default(0)
+  api_type        String  @default("DEFAULT") @db.VarChar(30)
+  api_com         Float   @default(0) @db.Float
+  api_mode        Int     @default(0)
+  cashback        Float   @default(0) @db.Float
+  refund          Int     @default(0)
+  op_id           Int?
+  circle_id       Int?
+  api_id          Int?
+  request_id      String  @default("0") @db.VarChar(50)
+  ts              BigInt? @default(0)
+  tds             Float?  @default(0) @db.Float
+  base_rate       Float?  @default(0) @db.Float
+  provider        String? @db.VarChar(100)
+  api_ref         String? @db.VarChar(100)
+  recorn          Int?    @default(0) @db.TinyInt
+}
+
+model states {
+  stateId         Int      @id
+  state           String?  @db.VarChar(255)
+  activeFlag      Int?
+  remarks         String?  @db.VarChar(255)
+  sortFlag        Int?
+  timestamp       DateTime @default(now()) @db.Timestamp(0)
+  updateTimestamp DateTime @default(now()) @db.Timestamp(0)
+  stateCode       String?  @db.VarChar(255)
+}
+
+model status_check {
+  ID       Int     @id @default(autoincrement())
+  tid      String? @db.VarChar(100)
+  mobile   String? @db.VarChar(50)
+  amount   Float?  @db.Float
+  status   String? @db.VarChar(20)
+  api_ref  String? @db.VarChar(255)
+  counter  Int?    @default(0) @db.TinyInt
+  user_id  Int?
+  api_type String? @db.VarChar(50)
+}
+
+model statuscode {
+  ID            Int     @id @default(autoincrement())
+  api_status    String? @db.VarChar(45)
+  system_status String? @db.VarChar(45)
+  api_message   String? @db.VarChar(100)
+}
+
+model system_settings {
+  ID                   Int     @id @default(autoincrement())
+  transfer_to_cron     String  @db.VarChar(5)
+  lock_system          String  @db.VarChar(5)
+  maintainance_mode    String  @db.VarChar(5)
+  cron_on_off          String  @db.VarChar(5)
+  rb_token             String  @db.Text
+  ezypay_auth_code     String  @db.VarChar(200)
+  ezypay_mpin          String? @db.VarChar(10)
+  v_charge1            Float   @db.Float
+  rupeebiz_tx_limit    Float   @db.Float
+  ez_tx_limit          Float   @db.Float
+  RB_TX_LIMIT_SMS      Int
+  EZ_TX_LIMIT_SMS      Int
+  spaisa_token         String  @db.VarChar(255)
+  sp_balance_alert     Float   @db.Float
+  upi_client_id        String? @db.VarChar(200)
+  upi_client_secret    String? @db.VarChar(200)
+  upi_env              String? @db.VarChar(200)
+  upi_charge           Float?  @db.Float
+  upi_url              String? @db.VarChar(200)
+  upi_test_url         String? @db.VarChar(200)
+  system_ip            String? @db.VarChar(100)
+  uat_system_ip        String? @db.VarChar(100)
+  key                  String? @db.VarChar(45)
+  aes_key              String? @db.VarChar(200)
+  en_key               String? @db.VarChar(255)
+  encrypt_key          String? @db.VarChar(255)
+  stop_txn_count       Int     @default(0)
+  stop_txn_time        Int     @default(0)
+  phonepe_merchant_id  String? @db.VarChar(100)
+  phonepe_callback_url String? @db.VarChar(100)
+  phonepe_salt_key     String? @db.VarChar(100)
+  phonepe_apiEndPoint  String? @db.VarChar(100)
+  phonepe_saltindex    String? @db.VarChar(100)
+  phonepe_env          String? @db.VarChar(50)
+  payout               String? @db.VarChar(45)
+  dmt                  String? @db.VarChar(100)
+  beneficiary          String? @db.VarChar(100)
+  verification         String? @db.VarChar(100)
+  split                String? @db.VarChar(100)
+  upi                  String? @db.VarChar(45)
+}
+
+model tds {
+  ID               Int    @id @default(autoincrement())
+  type             String @db.VarChar(20)
+  outlet_name      String @db.VarChar(100)
+  user_name        String @db.VarChar(200)
+  pan_card         String @db.VarChar(25)
+  total_commission Float  @db.Float
+  tds              Float  @db.Float
+  date             String @db.VarChar(10)
+  status           String @default("PENDING") @db.VarChar(50)
+}
+
+model test {
+  ID   Int       @id @default(autoincrement())
+  date DateTime? @default(now()) @db.DateTime(0)
+}
+
+model transactiondata {
+  ID                    BigInt   @id @default(autoincrement())
+  success               Boolean?
+  merchantId            String?  @db.VarChar(255)
+  merchantTransactionId String?  @db.VarChar(36)
+  transactionId         String?  @db.VarChar(255)
+  amount                Decimal? @db.Decimal(10, 2)
+  state                 String?  @db.VarChar(255)
+  responseCode          String?  @db.VarChar(255)
+  code                  String?  @db.VarChar(255)
+  type                  String?  @db.VarChar(100)
+  utr                   String?  @db.VarChar(12)
+  upiTransactionId      String?  @db.VarChar(255)
+  user_id               String?  @default("0") @db.VarChar(100)
+}
+
+model transactions {
+  id            Int       @id @default(autoincrement())
+  private_token String    @unique(map: "private_token") @db.VarChar(255)
+  amount        Float     @db.Float
+  date          DateTime  @db.DateTime(0)
+  user_id       Int
+  status        String    @db.VarChar(50)
+  error_code    String?   @db.VarChar(50)
+  created_at    DateTime? @default(now()) @db.DateTime(0)
+  updated_at    DateTime? @default(now()) @db.DateTime(0)
+}
+
+model unique_tid {
+  TID BigInt
+  ID  Int    @id @default(autoincrement())
+}
+
+model upi_bank {
+  ID    Int     @id @default(autoincrement())
+  name  String? @db.VarChar(100)
+  code  String? @db.VarChar(45)
+  input String? @default("mobile") @db.VarChar(45)
+}
+
+model upi_details {
+  ID                 BigInt  @id @default(autoincrement())
+  name               String? @db.VarChar(200)
+  mobile             String? @db.VarChar(12)
+  account            String? @db.VarChar(100)
+  verified           Int?    @default(0)
+  bank               String? @db.VarChar(100)
+  beneficiary_mobile String? @default("NA") @db.VarChar(12)
+}
+
+model upi_statements {
+  ID           Int     @id @default(autoincrement())
+  status       String? @default("PENDING") @db.VarChar(45)
+  message      String? @db.VarChar(45)
+  mode         Int?    @default(0)
+  closing_bal  Float?  @default(0)
+  amount       Float?  @default(0) @db.Float
+  credited     Float?  @default(0) @db.Float
+  opening_bal  Float?  @default(0)
+  user_id      Int?    @default(0)
+  vAccountId   String? @db.VarChar(200)
+  virtualVpaId String? @db.VarChar(200)
+  phone        String? @db.VarChar(12)
+  remitterVpa  String? @db.VarChar(100)
+  remitterName String? @db.VarChar(100)
+  utr          String? @db.VarChar(100)
+  date         String? @db.VarChar(20)
+  time         String? @db.VarChar(20)
+  admin_com    Float?  @default(0) @db.Float
+  api_com      Float?  @default(0) @db.Float
+  user_com     Float?  @default(0) @db.Float
+}
+
+model upi_user {
+  ID               Int     @id @default(autoincrement())
+  user_id          Int
+  ifsc             String? @db.VarChar(12)
+  currency         String? @db.VarChar(12)
+  vAccountId       String  @db.VarChar(255)
+  virtualVpaId     String  @db.VarChar(255)
+  qr_code          String  @db.LongText
+  upi_comission    Float   @default(0.2) @db.Float
+  date             String? @db.VarChar(20)
+  user_type        String  @default("retailer") @db.VarChar(100)
+  transactionLimit Float?  @db.Float
+  minimumBalance   Float?  @db.Float
+  bank_code        String? @db.VarChar(11)
+}
+
+model usage_charges {
+  ID       Int     @id @default(autoincrement())
+  user_id  Int?
+  txn_date String? @db.VarChar(255)
+}
+
+model user_comm {
+  ID          Int    @id @default(autoincrement())
+  operator_id Int
+  user_id     Int
+  com_type    String @db.VarChar(100)
+  super_com   Float? @default(0) @db.Float
+  company_com Float  @db.Float
+  dist_com    Float  @db.Float
+  retail_com  Float  @db.Float
+  plan_id     Int?   @default(0)
+}
+
+model users_bank {
+  ID            Int     @id @default(autoincrement())
+  name          String? @db.VarChar(200)
+  account       String? @db.VarChar(25)
+  ifsc          String? @db.VarChar(12)
+  bank          String? @db.VarChar(100)
+  status        String? @default("PENDING") @db.VarChar(45)
+  retailer_id   Int?    @default(0)
+  unique_id     String? @db.VarChar(100)
+  cancel_cheque String? @db.VarChar(255)
+  employee_id   Int?
+}
+
+model users_device_config {
+  ID              BigInt  @id @default(autoincrement())
+  password        String? @db.VarChar(100)
+  comm_mode       String? @default("matm") @db.VarChar(45)
+  user_id         BigInt?
+  username        String? @db.VarChar(45)
+  device_username String? @db.VarChar(45)
+  device_id       String? @db.VarChar(100)
+  type            String  @default("MTM") @db.VarChar(100)
+}
+
+model users_onboard {
+  ID                 Int     @id @default(autoincrement())
+  user_id            BigInt?
+  parent_id          String? @db.VarChar(20)
+  unique_id          String? @db.VarChar(100)
+  mobile             String? @db.VarChar(12)
+  name               String? @db.VarChar(200)
+  email              String? @db.VarChar(150)
+  pincode            String? @db.VarChar(7)
+  address            String? @db.Text
+  aadhaar_number     String? @db.VarChar(100)
+  name_on_aadhaar    String? @db.VarChar(255)
+  pan_number         String? @db.VarChar(15)
+  father_name        String? @db.VarChar(100)
+  dob                String? @db.VarChar(20)
+  category           String? @db.VarChar(50)
+  shop_name          String? @db.VarChar(200)
+  shop_pincode       String? @db.VarChar(7)
+  shop_address       String? @db.Text
+  selfie_with_shop   String? @db.VarChar(255)
+  status             String  @default("PENDING") @db.VarChar(20)
+  date               String? @db.VarChar(15)
+  time               String? @db.VarChar(15)
+  doc_verification   String? @db.Text
+  pan_verification   String? @db.Text
+  user_type          String? @db.VarChar(100)
+  building           String? @db.VarChar(200)
+  landmark           String? @db.VarChar(200)
+  city               String? @db.VarChar(200)
+  lat                String? @db.VarChar(45)
+  long               String? @db.VarChar(45)
+  screen             String? @db.VarChar(45)
+  remark             String? @db.VarChar(255)
+  mid                String? @db.VarChar(100)
+  username           String? @db.VarChar(100)
+  tid                String? @db.VarChar(100)
+  deviceIMEI         String? @db.VarChar(100)
+  ekyc_status        String? @db.VarChar(50)
+  onboarding_status  Int     @default(0)
+  morpho_url         String? @db.VarChar(255)
+  mantra_url         String? @db.VarChar(255)
+  startek_url        String? @db.VarChar(255)
+  api_merchant_code  String? @db.VarChar(50)
+  aeps_tapit_pin     String? @default("1234") @db.VarChar(100)
+  primaryKeyId       String? @db.VarChar(100)
+  encodeFPTxnId      String? @db.VarChar(100)
+  aadhaar_number_enc String? @db.VarChar(255)
+  biometric_status   Int     @default(0) @db.TinyInt
+  employee_id        Int?
+  checker_status     String? @default("PENDING") @db.VarChar(45)
+}
+
+model verify_bank {
+  ID            BigInt @id @default(autoincrement())
+  customer_name String @db.VarChar(100)
+  bank_name     String @db.VarChar(100)
+  account_no    String @db.VarChar(25)
+  ifsc          String @db.VarChar(20)
+}
+
+model virtual_account {
+  id             Int     @id @default(autoincrement())
+  name           String  @db.VarChar(200)
+  tran_id        String  @db.VarChar(255)
+  account_no     String  @db.VarChar(50)
+  full_va_number String  @db.VarChar(50)
+  account_number String  @db.VarChar(50)
+  short_name     String  @db.VarChar(50)
+  cif            String  @db.VarChar(100)
+  va_beneficiary String  @db.VarChar(200)
+  status         String  @default("disabled") @db.VarChar(50)
+  user_id        Int     @default(0)
+  date           String? @db.VarChar(20)
+  time           String? @db.VarChar(20)
+  charge         Float   @default(10) @db.Float
+}
+
+model whitelist {
+  ID         BigInt @id @default(autoincrement())
+  ip_address String @db.VarChar(200)
+  user_id    BigInt
+  date       String @db.VarChar(20)
+  time       String @db.VarChar(20)
+  status     String @default("PENDING") @db.VarChar(30)
+}
+
+enum retailers_status {
+  Active
+  Inactive
 }

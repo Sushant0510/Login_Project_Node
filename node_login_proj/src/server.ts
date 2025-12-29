@@ -4,7 +4,17 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { rateLimit } from 'express-rate-limit';
 import authRoutes from './routes/auth.routes';
+import { genericRouter } from './routes/generic.routes';
 import { errorHandler } from './middleware/error.middleware';
+import { PrismaClient } from '@prisma/client';
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: any;
+    }
+  }
+}
 
 // Load environment variables
 dotenv.config();
@@ -26,6 +36,9 @@ app.use(limiter);
 
 // Routes
 app.use('/api/auth', authRoutes);
+
+// Generic CRUD routes for all models
+app.use('/api', genericRouter);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
