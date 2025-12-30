@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import prisma from '../config/prisma-client';
 import { serializeBigInts } from '../utils/bigint-serializer';
 
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient();
 
 // Define a type that represents a Prisma model with the methods we need
 type PrismaModel<T = any> = {

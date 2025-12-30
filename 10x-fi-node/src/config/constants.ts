@@ -1,11 +1,25 @@
-// Load environment variables
-require('dotenv').config();
+import dotenv from 'dotenv';
+dotenv.config();
 
-export const PORT = process.env.PORT || 3000;
-export const NODE_ENV = process.env.NODE_ENV || 'development';
-export const MONGODB_URI =
-  process.env.MONGODB_URI || 'mongodb://localhost:27017/enterprise-starter';
-export const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
-export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
+// Type-safe environment variables
+const env = {
+  NODE_ENV: process.env.NODE_ENV || 'development',
+  PORT: parseInt(process.env.PORT || '3000', 10),
+  JWT_SECRET: process.env.JWT_SECRET as string, // Type assertion since we validate this below
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '24h',
+} as const;
 
-// Add other configuration constants here
+// Validate required environment variables
+const requiredVars = ['JWT_SECRET'] as const;
+for (const key of requiredVars) {
+  if (!env[key]) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+}
+
+export const {
+  NODE_ENV,
+  PORT,
+  JWT_SECRET,
+  JWT_EXPIRES_IN,
+} = env;

@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { Prisma } from '@prisma/client';
-import { prisma } from '../lib/prisma';
+import prisma from '../config/prisma-client';
 import { JWT_SECRET } from '../config/constants';
 
 // Helper to verify admin credentials against database

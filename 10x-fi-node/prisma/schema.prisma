@@ -40,7 +40,7 @@ model users {
   api_token            String?  @db.VarChar(255)
   callback_url         String?  @db.Text
   upi_callback         String?  @db.Text
-  upi_bal              Float?   @default(0)
+  sale_force_id        Int?     @default(40)
   unique_id            String?  @db.VarChar(100)
   pincode              String?  @db.VarChar(7)
   cap_balance          Float?   @default(0) @db.Float
@@ -54,10 +54,24 @@ model users {
   upi_transfer_plan_id Int?     @default(1806)
   upi_collect_plan_id  Int?     @default(1806)
   payout_plan_id       Int?     @default(1806)
-  sale_force_id        String?  @db.VarChar(100)
+  check_onboarding     Int?     @default(0)
+  callback_sent        String?  @db.VarChar(20)
   payout_pipe          String?  @db.VarChar(20)
+  penny_pipe           String?  @db.VarChar(45)
+  prev_password        String?  @db.Text
   enforce_pipe         Int?     @default(0) @db.TinyInt
+  service_status       Int?     @default(1) @db.TinyInt
+  escrow_id            String?  @db.VarChar(45)
 
+  @@index([admin_id], map: "idx_admin_id")
+  @@index([type, balance], map: "idx_type_plan")
+  @@index([ID], map: "idx_user_id")
+  @@index([admin_id], map: "idx_users_admin_id")
+  @@index([aeps_plan_id], map: "idx_users_aeps_plan_id")
+  @@index([ID], map: "idx_users_id")
+  @@index([ID, company_name], map: "idx_users_id_name")
+  @@index([type], map: "idx_users_type")
+  @@index([unique_id], map: "idx_users_unique_id")
   @@map("users")
 }
 
@@ -67,6 +81,8 @@ model action_status {
   response_status String? @db.VarChar(100)
   message         String? @db.VarChar(255)
   provider        String? @db.VarChar(100)
+
+  @@index([ID], map: "idx_action_status_ID")
 }
 
 model aeps_bank {
@@ -74,12 +90,16 @@ model aeps_bank {
   bank_id   Int?
   bank_name String? @db.VarChar(100)
   iinno     Int?
+
+  @@index([ID], map: "idx_aeps_bank_ID")
 }
 
 model aeps_error_procedure {
   ID      Int    @id @default(autoincrement())
   message String @db.VarChar(255)
   status  String @db.VarChar(255)
+
+  @@index([ID], map: "idx_aeps_error_procedure_ID")
 }
 
 model aeps_onboarding {
@@ -100,6 +120,8 @@ model aeps_onboarding {
   mantra_url          String? @db.VarChar(255)
   startek_url         String? @db.VarChar(255)
   api_type            String? @default("TAPIT") @db.VarChar(45)
+
+  @@index([ID], map: "idx_aeps_onboarding_ID")
 }
 
 model aeps_onboarding_charges {
@@ -107,6 +129,8 @@ model aeps_onboarding_charges {
   charges    Float? @default(0) @db.Float
   user_id    Int?   @default(0)
   api_charge Float? @default(0) @db.Float
+
+  @@index([ID], map: "idx_aeps_onboarding_charges_ID")
 }
 
 model all_operator_balance {
@@ -117,25 +141,52 @@ model all_operator_balance {
   cp     Float @db.Float
   eko    Float @db.Float
   o2pay  Float @db.Float
+
+  @@index([ID], map: "idx_all_operator_balance_ID")
 }
 
 model api_logs {
-  ID         Int     @id @default(autoincrement())
-  type       String  @db.VarChar(30)
-  request_id String? @db.VarChar(255)
-  request    String  @db.Text
-  response   String  @db.Text
-  date       String? @db.VarChar(20)
-  time       String? @db.VarChar(20)
-  status     String? @default("0") @db.VarChar(50)
-  mobile     String? @db.VarChar(20)
-  tid        String? @db.VarChar(45)
-  delay      Float?  @db.Float
-  action     String? @db.VarChar(50)
-  stm_id     BigInt? @default(0)
-  api_id     Int?
-  txn_type   String? @db.VarChar(100)
-  api_number Int?
+  ID                Int     @id @default(autoincrement())
+  type              String  @db.VarChar(30)
+  request_id        String? @db.VarChar(255)
+  request           String  @db.Text
+  response          String  @db.Text
+  date              String? @db.VarChar(20)
+  time              String? @db.VarChar(20)
+  status            String? @default("0") @db.VarChar(50)
+  mobile            String? @db.VarChar(20)
+  tid               String? @db.VarChar(45)
+  delay             Float?  @db.Float
+  action            String? @db.VarChar(50)
+  stm_id            BigInt? @default(0)
+  api_id            Int?
+  txn_type          String? @db.VarChar(100)
+  api_number        Int?
+  provider          String? @db.VarChar(100)
+  incoming_request  String? @db.Text
+  incoming_response String? @db.Text
+
+  @@unique([ID, date], map: "idx_unique_date")
+  @@index([mobile], map: "api_logs_idx_mobile")
+  @@index([tid], map: "api_logs_idx_tid")
+  @@index([api_number, status], map: "idx_api_logs_api_number_status")
+  @@index([date, time, status, mobile, tid, txn_type, type, request_id, provider, api_id, api_number, delay, stm_id], map: "idx_api_logs_composite_max")
+  @@index([date, delay], map: "idx_api_logs_date_delay")
+  @@index([date, provider, status], map: "idx_api_logs_date_provider_status")
+  @@index([date, response(length: 555), status, type], map: "idx_api_logs_date_response_status_type")
+  @@index([date, tid], map: "idx_api_logs_date_tid")
+  @@index([date, tid, status], map: "idx_api_logs_date_tid_status")
+  @@index([date, time, status], map: "idx_api_logs_date_time_status")
+  @@index([mobile, status], map: "idx_api_logs_mobile_status")
+  @@index([provider, type], map: "idx_api_logs_provider_type")
+  @@index([request_id, api_id], map: "idx_api_logs_request_id_api_id")
+  @@index([status, date, tid, provider, txn_type, mobile], map: "idx_api_logs_status_date_tid")
+  @@index([date, time, delay, api_id, status, tid], map: "idx_api_logs_time_delay")
+  @@index([txn_type, status], map: "idx_api_logs_txn_type_status")
+  @@index([date], map: "idx_date")
+  @@index([provider], map: "idx_provider")
+  @@index([provider, tid, date], map: "idx_provider_tid_date")
+  @@index([tid], map: "idx_tid")
 }
 
 model api_payout {
@@ -177,6 +228,8 @@ model api_payout {
   cardno          String? @db.VarChar(100)
   retailer_charge Float?  @default(0) @db.Float
   service         String? @db.VarChar(50)
+
+  @@index([ID], map: "idx_api_payout_ID")
 }
 
 model api_statements {
@@ -206,6 +259,9 @@ model api_statements {
   remark        String? @db.Text
   provider      String? @default("UKN") @db.VarChar(45)
   ts            BigInt? @default(0)
+
+  @@index([ID], map: "idx_api_statements_ID")
+  @@index([request_id, retailer_id], map: "idx_api_statements_request_id_retailer_id")
 }
 
 model apis_balance {
@@ -218,6 +274,8 @@ model apis_balance {
   email         String? @db.VarChar(100)
   messsage      String? @db.Text
   api_token     String? @db.VarChar(200)
+
+  @@index([ID], map: "idx_apis_balance_ID")
 }
 
 model apiusers {
@@ -238,6 +296,8 @@ model apiusers {
   IPAddress        String? @db.VarChar(15)
   Status           String? @db.VarChar(20)
   EKYC             String? @db.VarChar(255)
+
+  @@index([ID], map: "idx_ApiUsers_ID")
 }
 
 model app_version {
@@ -248,6 +308,8 @@ model app_version {
   ip_address String   @db.VarChar(100)
   date       DateTime @default(now()) @db.DateTime(0)
   brand      String?  @default("BRANCHX") @db.VarChar(100)
+
+  @@index([ID], map: "idx_app_version_ID")
 }
 
 model approval_limit {
@@ -255,26 +317,40 @@ model approval_limit {
   user_id  Int   @default(0)
   admin_id Int   @default(0)
   amount   Float @default(0) @db.Float
+
+  @@index([ID], map: "idx_approval_limit_ID")
 }
 
 model balance_request {
-  ID          BigInt  @id @default(autoincrement())
-  name        String  @db.VarChar(150)
-  date        String  @db.VarChar(10)
-  time        String  @db.VarChar(12)
-  amount      Float   @db.Float
-  mode        String  @db.VarChar(30)
-  tid         String  @db.VarChar(30)
-  utr         String? @db.VarChar(50)
-  bank        String  @db.VarChar(50)
-  trans_date  String  @db.VarChar(20)
-  remark      String  @db.VarChar(150)
-  reason      String? @db.VarChar(255)
-  admin_id    Int
-  user_id     Int
-  status      String  @default("PENDING") @db.VarChar(30)
-  approval    Int     @default(0)
-  employee_id Int     @default(0)
+  ID             BigInt   @id @default(autoincrement())
+  name           String   @db.VarChar(150)
+  date           String   @db.VarChar(10)
+  time           String   @db.VarChar(12)
+  amount         Decimal? @db.Decimal(15, 2)
+  mode           String   @db.VarChar(30)
+  tid            String   @db.VarChar(30)
+  utr            String?  @db.VarChar(50)
+  bank           String   @db.VarChar(50)
+  trans_date     String   @db.VarChar(20)
+  remark         String   @db.VarChar(150)
+  reason         String?  @db.VarChar(255)
+  admin_id       Int
+  user_id        Int
+  status         String   @default("PENDING") @db.VarChar(30)
+  approval       Int      @default(0)
+  employee_id    Int      @default(0)
+  recorn         Int?     @default(0)
+  discard_reason String?  @db.Text
+  transfer_id    String?  @db.VarChar(45)
+
+  @@index([date, user_id], map: "idx_balance_request_date_user")
+  @@index([date, user_id, ID], map: "idx_balance_request_date_user_id")
+  @@index([date, user_id, status], map: "idx_balance_request_date_user_status")
+  @@index([ID], map: "idx_balance_request_id")
+  @@index([status], map: "idx_balance_request_status")
+  @@index([admin_id], map: "idx_br_admin_id")
+  @@index([status, approval], map: "idx_br_status_approval")
+  @@index([user_id], map: "idx_br_user_id")
 }
 
 model balance_request_bank {
@@ -283,6 +359,8 @@ model balance_request_bank {
   account_number String? @db.VarChar(50)
   ifsc_code      String? @db.VarChar(15)
   status         Int     @default(0) @db.TinyInt
+
+  @@index([ID], map: "idx_balance_request_bank_ID")
 }
 
 model bank {
@@ -296,6 +374,8 @@ model bank {
   mode          Int
   credit_card   Int
   bankid        String? @db.VarChar(45)
+
+  @@index([ID], map: "idx_bank_ID")
 }
 
 model billers {
@@ -307,6 +387,8 @@ model billers {
   amount_exactness  String? @db.VarChar(20)
   fetch_requirement String? @db.VarChar(20)
   service           String? @db.VarChar(100)
+
+  @@index([ID], map: "idx_billers_ID")
 }
 
 model block_list {
@@ -316,11 +398,13 @@ model block_list {
   date       String? @db.VarChar(20)
   time       String? @db.VarChar(20)
   attemp     Int?    @default(0)
+
+  @@index([ID], map: "idx_block_list_ID")
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model ci_sessions {
-  id         String @db.VarChar(128)
+  ID         String @db.VarChar(128)
   ip_address String @db.VarChar(45)
   timestamp  Int    @default(0) @db.UnsignedInt
   data       Bytes  @db.Blob
@@ -346,6 +430,9 @@ model commission {
   user_id             Int     @default(0)
   base_rate           Float?  @default(0) @db.Float
   service             String? @db.VarChar(45)
+
+  @@index([ID], map: "idx_commission_ID")
+  @@index([plan_id], map: "idx_commission_plan_id")
 }
 
 model commission_dmt {
@@ -363,6 +450,8 @@ model commission_dmt {
   api       Float   @default(0) @db.Float
   user_id   Int     @default(0)
   base_rate Float?  @default(0) @db.Float
+
+  @@index([ID], map: "idx_commission_dmt_ID")
 }
 
 model commission_mt {
@@ -378,6 +467,8 @@ model commission_mt {
   Comment     String @db.VarChar(100)
   date        String @db.VarChar(10)
   user_id     Int    @default(1)
+
+  @@index([ID], map: "idx_commission_mt_ID")
 }
 
 model commission_settlement {
@@ -394,43 +485,55 @@ model commission_settlement {
   retailer_com    Int     @default(0)
   status          Int     @default(0) @db.TinyInt
   tid             String? @db.VarChar(50)
+
+  @@index([ID], map: "idx_commission_settlement_ID")
+  @@index([tid], map: "idx_commission_tid")
 }
 
 model credential {
-  ID         Int     @id @default(autoincrement())
-  type       String? @db.VarChar(200)
-  username   String? @db.VarChar(100)
-  password   String? @db.VarChar(100)
-  api_token  String? @db.VarChar(255)
-  app_id     String? @db.VarChar(255)
-  app_secret String? @db.LongText
-  prod_url   String? @db.VarChar(255)
-  test_url   String? @db.VarChar(255)
-  header     String? @db.VarChar(255)
-  params     String? @db.Text
-  status     String  @default("Disable") @db.VarChar(20)
-  ip_address String? @db.VarChar(45)
-  method     String? @db.VarChar(8)
+  ID         Int       @id @default(autoincrement())
+  type       String?   @db.VarChar(200)
+  username   String?   @db.VarChar(100)
+  password   String?   @db.VarChar(100)
+  api_token  String?   @db.VarChar(255)
+  app_id     String?   @db.VarChar(255)
+  app_secret String?   @db.LongText
+  prod_url   String?   @db.VarChar(255)
+  test_url   String?   @db.VarChar(255)
+  header     String?   @db.VarChar(255)
+  params     String?   @db.Text
+  status     String    @default("Disable") @db.VarChar(20)
+  ip_address String?   @db.VarChar(45)
+  method     String?   @db.VarChar(8)
+  updatedAt  DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([ID], map: "idx_credential_ID")
 }
 
 model cron_request {
-  ID           Int     @id @default(autoincrement())
-  system_tid   String  @db.VarChar(25)
-  api_tid      String? @db.VarChar(25)
-  date         String  @db.VarChar(10)
-  time         String  @db.VarChar(10)
-  user_id      Int
-  request      String  @db.Text
-  response     String? @db.Text
-  status       String  @db.VarChar(100)
-  type         String  @db.VarChar(25)
-  by           Int     @default(0)
-  mpesa_mobile String? @db.VarChar(12)
-  r_mobile     String  @db.VarChar(12)
-  amount       Float   @db.Float
-  approval     Int     @default(0)
-  stm_id       BigInt  @default(0)
-  txtime       BigInt
+  ID             Int     @id @default(autoincrement())
+  system_tid     String  @db.VarChar(100)
+  api_tid        String? @db.VarChar(100)
+  date           String  @db.VarChar(10)
+  time           String  @db.VarChar(10)
+  user_id        Int
+  request        String  @db.Text
+  response       String? @db.Text
+  status         String  @db.VarChar(100)
+  type           String  @db.VarChar(25)
+  by             Int     @default(0)
+  mpesa_mobile   String? @db.VarChar(12)
+  r_mobile       String  @db.VarChar(12)
+  amount         Float   @db.Float
+  approval       Int     @default(0)
+  stm_id         BigInt  @default(0)
+  txtime         BigInt
+  super_id       Int?    @default(0)
+  company_id     Int?    @default(0)
+  distributor_id Int?    @default(0)
+  provider       String? @db.VarChar(45)
+
+  @@index([ID], map: "idx_cron_request_ID")
 }
 
 model debug {
@@ -438,6 +541,8 @@ model debug {
   mobile String? @db.VarChar(12)
   debug  Int     @default(0)
   port   Int     @default(8000)
+
+  @@index([ID], map: "idx_debug_ID")
 }
 
 model dms_persistent_objects {
@@ -457,6 +562,8 @@ model dmt_amt_switching {
   from_amt Float?  @default(0) @db.Float
   to_amt   Float?  @default(0) @db.Float
   api      String? @default("NSDL") @db.VarChar(45)
+
+  @@index([ID], map: "idx_dmt_amt_switching_ID")
 }
 
 model dmt_beneficiary {
@@ -472,6 +579,16 @@ model dmt_beneficiary {
   smartpay       Int?    @default(0)
   tramo_bene_id  String? @db.VarChar(100)
   ezypay_bene_id String? @db.VarChar(100)
+
+  @@index([account, ifsc], map: "idx_dmt_beneficiary_account_ifsc")
+  @@index([bank_code], map: "idx_dmt_beneficiary_bank_code")
+  @@index([bank, verified, mobile], map: "idx_dmt_beneficiary_bank_verified_mobile")
+  @@index([beneficiary_id], map: "idx_dmt_beneficiary_beneficiary_id")
+  @@index([mobile], map: "idx_dmt_beneficiary_mobile")
+  @@index([remitter_id, account, ifsc], map: "idx_dmt_beneficiary_remitter_account_ifsc")
+  @@index([remitter_id], map: "idx_dmt_beneficiary_remitter_id")
+  @@index([smartpay, bank_code, tramo_bene_id], map: "idx_dmt_beneficiary_smartpay_bankcode")
+  @@index([verified], map: "idx_dmt_beneficiary_verified")
 }
 
 model dmt_register {
@@ -485,6 +602,15 @@ model dmt_register {
   address        String? @db.VarChar(100)
   smartpay_limit Float?  @default(25000) @db.Float
   ezypay_limit   Int     @default(25000)
+
+  @@index([smartpay_limit, ezypay_limit], map: "idx_dmt_register_limits")
+  @@index([mobile], map: "idx_dmt_register_mobile")
+  @@index([mobile, verified, pin_code], map: "idx_dmt_register_mobile_verified_pin")
+  @@index([pin_code], map: "idx_dmt_register_pin_code")
+  @@index([pin_code, mobile, address], map: "idx_dmt_register_pin_mobile_address")
+  @@index([remitter_id], map: "idx_dmt_register_remitter_id")
+  @@index([smartpay_limit, ezypay_limit, verified], map: "idx_dmt_register_smartpay_ezypay_verified")
+  @@index([verified], map: "idx_dmt_register_verified")
 }
 
 model dmt_switch {
@@ -492,10 +618,18 @@ model dmt_switch {
   provider String @db.VarChar(100)
   user_id  Int    @default(0)
   active   Int    @default(1) @db.TinyInt
+
+  @@index([ID], map: "idx_dmt_switch_ID")
+  @@index([provider], map: "idx_dmt_switch_provider")
+  @@index([provider, active], map: "idx_dmt_switch_provider_active")
+  @@index([user_id, active], map: "idx_dmt_switch_user_id_active")
+  @@index([user_id, provider, active], map: "idx_dmt_switch_user_provider_active")
 }
 
 model duplicate_request {
   request_id BigInt @id @default(autoincrement())
+
+  @@index([request_id], map: "idx_duplicate_request_request_id")
 }
 
 model employee {
@@ -508,6 +642,8 @@ model employee {
   admin_id Int?    @default(0)
   status   Int?    @default(0)
   pin      String? @default("1234") @db.VarChar(10)
+
+  @@index([ID], map: "idx_employee_ID")
 }
 
 model ifsc_correction {
@@ -515,6 +651,8 @@ model ifsc_correction {
   ifsc         String? @db.VarChar(12)
   ifsc_updated String? @db.VarChar(12)
   status       String  @default("PENDING") @db.VarChar(100)
+
+  @@index([ID], map: "idx_ifsc_correction_ID")
 }
 
 model kyc_charges {
@@ -560,16 +698,6 @@ model kyc_services {
   @@index([ID], map: "idx_kyc_services_ID")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model limit {
-  ID   Int?
-  type String? @db.VarChar(100)
-  min  Float?  @db.Float
-  max  Float?  @db.Float
-
-  @@ignore
-}
-
 model login_ip {
   ID          BigInt @id @default(autoincrement())
   ip          String @db.VarChar(15)
@@ -578,6 +706,8 @@ model login_ip {
   outlet_name String @db.VarChar(100)
   date        String @db.VarChar(10)
   time        String @db.VarChar(10)
+
+  @@index([ID], map: "idx_login_ip_ID")
 }
 
 model low_balance_alert {
@@ -586,6 +716,8 @@ model low_balance_alert {
   mobile    String @db.VarChar(22)
   status    String @default("on") @db.VarChar(10)
   message   String @db.VarChar(160)
+
+  @@index([ID], map: "idx_low_balance_alert_ID")
 }
 
 model master_otp {
@@ -593,6 +725,8 @@ model master_otp {
   user_id Int?
   otp     Int?
   date    String? @db.VarChar(12)
+
+  @@index([ID], map: "idx_master_otp_ID")
 }
 
 model matm_order {
@@ -608,6 +742,8 @@ model matm_order {
   device_model String? @db.VarChar(100)
   tid          String? @db.VarChar(100)
   api_type     String? @default("CFRE") @db.VarChar(45)
+
+  @@index([ID], map: "idx_matm_order_ID")
 }
 
 model mosambee_callback {
@@ -622,12 +758,16 @@ model mosambee_callback {
   time          String? @db.VarChar(20)
   sent_callback String? @db.LongText
   txn_type      String? @db.VarChar(50)
+
+  @@index([ID], map: "idx_mosambee_callback_ID")
 }
 
 model my_info {
   ID      Int    @id @default(autoincrement())
   code    String @db.VarChar(100)
   details String @db.Text
+
+  @@index([ID], map: "idx_my_info_ID")
 }
 
 model new_api {
@@ -653,6 +793,8 @@ model new_api {
   status_check_method    String? @default("get") @db.VarChar(20)
   status_check_data_type String? @default("xml") @db.VarChar(20)
   status_check_url       String? @db.Text
+
+  @@index([ID], map: "idx_new_api_id")
 }
 
 model new_circle {
@@ -661,6 +803,8 @@ model new_circle {
   circle_code String @db.VarChar(5)
   call_by     String @db.VarChar(100)
   short_name  String @db.VarChar(50)
+
+  @@index([ID], map: "idx_new_circle_id")
 }
 
 model new_circle_wise_opcode {
@@ -675,6 +819,13 @@ model new_circle_wise_opcode {
   params1     String @db.VarChar(50)
   params2     String @db.VarChar(50)
   params3     String @db.VarChar(50)
+
+  @@index([operator_id, api_id, circle_id], map: "idx_circle")
+  @@index([ID], map: "idx_new_circle_wise_opcode_ID")
+  @@index([operator_id, circle_id, api_id], map: "idx_new_circle_wise_opcode_operator_circle_api")
+  @@index([operator_id, api_id, circle_id], map: "idx_opcode")
+  @@index([operator_id, api_id, circle_id], map: "idx_opcode_operator_api_circle")
+  @@index([operator_id, circle_id, api_id], map: "idx_operator_circle_api")
 }
 
 model new_circle_wise_switch {
@@ -685,6 +836,11 @@ model new_circle_wise_switch {
   api_id      Int
   date        String @db.VarChar(50)
   status      String @db.VarChar(50)
+
+  @@index([ID], map: "idx_new_circle_wise_switch_ID")
+  @@index([api_id], map: "idx_new_circle_wise_switch_api_id")
+  @@index([circle_id], map: "idx_new_circle_wise_switch_circle_id")
+  @@index([operator_id], map: "idx_new_circle_wise_switch_operator_id")
 }
 
 model new_commission {
@@ -704,6 +860,8 @@ model new_commission {
   user_id             Int     @default(0)
   base_rate           Float?  @default(0) @db.Float
   service             String? @db.VarChar(45)
+
+  @@index([ID], map: "idx_new_commission_ID")
 }
 
 model new_denomination_switch {
@@ -715,6 +873,8 @@ model new_denomination_switch {
   to_amount   Float  @db.Float
   date        String @db.VarChar(50)
   status      String @db.VarChar(50)
+
+  @@index([ID], map: "idx_new_denomination_switch_ID")
 }
 
 model new_error_code {
@@ -722,6 +882,10 @@ model new_error_code {
   code        String  @db.VarChar(255)
   msg         String  @db.VarChar(255)
   description String? @db.VarChar(255)
+
+  @@index([code], map: "idx_error_code")
+  @@index([code], map: "idx_error_code_code")
+  @@index([ID], map: "idx_new_error_code_ID")
 }
 
 model new_ezytm_data {
@@ -734,6 +898,8 @@ model new_ezytm_data {
   Circle     String @db.VarChar(30)
   CircleCode String @db.VarChar(4)
   Message    String @db.VarChar(50)
+
+  @@index([ID], map: "idx_new_ezytm_data_ID")
 }
 
 model new_fail_switch {
@@ -745,6 +911,8 @@ model new_fail_switch {
   date           String @db.VarChar(50)
   status         String @db.VarChar(50)
   delay          Int?   @default(0)
+
+  @@index([ID], map: "idx_new_fail_switch_ID")
 }
 
 model new_operator {
@@ -762,6 +930,12 @@ model new_operator {
   circle_mode   String  @default("database") @db.VarChar(50)
   logo          String? @db.Text
   circle_status String? @default("NO") @db.VarChar(10)
+
+  @@index([ID], map: "idx_new_operator_id")
+  @@index([op_code], map: "idx_new_operator_op_code")
+  @@index([operator_code], map: "idx_new_operator_operator_code")
+  @@index([status], map: "idx_new_operator_status")
+  @@index([ID], map: "idx_operator_id")
 }
 
 model new_pending_switch {
@@ -772,6 +946,8 @@ model new_pending_switch {
   next_api_id    Int
   date           String @db.VarChar(50)
   status         String @db.VarChar(50)
+
+  @@index([ID], map: "idx_new_pending_switch_ID")
 }
 
 model new_permission {
@@ -783,6 +959,8 @@ model new_permission {
   deletes   Int     @default(0)
   views     Int     @default(1)
   file_name String? @db.VarChar(100)
+
+  @@index([ID], map: "idx_new_permission_ID")
 }
 
 model new_random_switch {
@@ -793,6 +971,11 @@ model new_random_switch {
   done_txn    Int
   date        String @db.VarChar(50)
   status      String @db.VarChar(50)
+
+  @@index([ID], map: "idx_new_random_switch_ID")
+  @@index([api_id], map: "idx_new_random_switch_api_id")
+  @@index([operator_id], map: "idx_new_random_switch_operator_id")
+  @@index([status], map: "idx_new_random_switch_status")
 }
 
 model new_rc_plans {
@@ -801,6 +984,8 @@ model new_rc_plans {
   operator_code Int?    @default(0)
   circle_code   Int?    @default(0)
   date          String? @db.VarChar(20)
+
+  @@index([ID], map: "idx_new_rc_plans_ID")
 }
 
 model new_ticket {
@@ -810,6 +995,8 @@ model new_ticket {
   remark       String @db.Text
   response     String @db.Text
   date         String @db.VarChar(50)
+
+  @@index([ID], map: "idx_new_ticket_ID")
 }
 
 model new_user_commission {
@@ -821,6 +1008,8 @@ model new_user_commission {
   per         Float  @db.Float
   flat        Float  @db.Float
   date        String @db.VarChar(100)
+
+  @@index([ID], map: "idx_new_user_commission_ID")
 }
 
 model new_user_log {
@@ -832,6 +1021,8 @@ model new_user_log {
   time       String   @db.VarChar(20)
   action_id  BigInt
   ip_address String   @db.VarChar(200)
+
+  @@index([ID], map: "idx_new_user_log_ID")
 }
 
 model new_user_wise_switch {
@@ -845,11 +1036,16 @@ model new_user_wise_switch {
   api_5       String @db.VarChar(150)
   api_6       String @db.VarChar(150)
   status      String @default("Enable") @db.VarChar(150)
+
+  @@index([ID], map: "idx_new_user_wise_switch_ID")
+  @@index([operator_id, user_id], map: "idx_nuws_operator_user")
 }
 
 model notification {
   ID  Int    @id @default(autoincrement())
   msg String @db.Text
+
+  @@index([ID], map: "idx_notification_ID")
 }
 
 model operators {
@@ -862,6 +1058,8 @@ model operators {
   extra_param  String @db.VarChar(20)
   message      String @db.VarChar(200)
   active       String @default("deactivate") @db.VarChar(30)
+
+  @@index([ID], map: "idx_operators_ID")
 }
 
 model outstanding_stm {
@@ -872,38 +1070,51 @@ model outstanding_stm {
   dist_id     Int
   retailer_id Int
   remark      String @db.Text
+
+  @@index([ID], map: "idx_outstanding_stm_ID")
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model partner_cap {
-  ID             Int?
-  cap            Float? @db.Float
-  instantpay_cap Float? @db.Float
+  ID             Int     @id
+  cap            String? @db.VarChar(200)
+  instantpay_cap Float?  @db.Float
+  emi_cap        Float?  @db.Float
 
+  @@index([ID], map: "idx_partner_cap_id")
+  @@index([ID, cap], map: "idx_partner_cap_id_cap")
   @@ignore
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model partner_limit {
-  ID   Int?
-  type String? @db.VarChar(100)
-  min  Float?  @db.Float
-  max  Float?  @db.Float
+  ID   Int     @id
+  type String? @db.VarChar(200)
+  min  Int?
+  max  Int?
 
+  @@index([ID], map: "idx_partner_limit_id")
+  @@index([ID, type], map: "idx_partner_limit_id_type")
+  @@index([min, max], map: "idx_partner_limit_min_max")
+  @@index([type], map: "idx_partner_limit_type")
+  @@index([type, min, max], map: "idx_partner_limit_type_min_max")
   @@ignore
 }
 
 model partner_merchants {
   ID           Int       @id @default(autoincrement())
-  CompanyName  String?   @db.VarChar(255)
-  OwnerName    String?   @db.VarChar(255)
-  BrandName    String?   @db.VarChar(255)
+  MerchantName String?   @db.VarChar(255)
   MobileNumber String?   @db.VarChar(15)
   EmailID      String?   @db.VarChar(255)
+  District     String?   @db.VarChar(100)
+  State        String?   @db.VarChar(100)
+  Pincode      String?   @db.VarChar(100)
   PartnerID    String?   @db.VarChar(100)
   CreatedAt    DateTime? @default(now()) @db.Timestamp(0)
   UpdatedAt    DateTime? @default(now()) @db.Timestamp(0)
+  MerchantCode String?   @db.VarChar(45)
   Active       Int?      @default(1) @db.TinyInt
+  kyc          Int?      @default(0) @db.TinyInt
 }
 
 model payout {
@@ -916,17 +1127,19 @@ model payout {
   prev_bal        Float
   balance         Float
   total_amt       Float?  @default(0) @db.Float
-  tid             String  @db.VarChar(25)
+  tid             String  @db.VarChar(50)
   bank_ref        String  @default("-") @db.VarChar(50)
   txn_type        String  @default("-") @db.VarChar(50)
   mobile          String  @default("-") @db.VarChar(12)
   date            String  @db.VarChar(10)
   time            String  @db.VarChar(10)
   admin_id        Int     @default(0)
+  super_id        Int?    @default(0)
   company_id      Int     @default(0)
   distributor_id  Int     @default(0)
   retailer_id     Int     @default(0)
   admin_com       Float   @default(0) @db.Float
+  super_com       Float?  @default(0) @db.Float
   company_com     Float   @default(0) @db.Float
   distributor_com Float   @default(0) @db.Float
   retailer_com    Float   @default(0) @db.Float
@@ -945,6 +1158,10 @@ model payout {
   cardno          String? @db.VarChar(100)
   retailer_charge Float?  @default(0) @db.Float
   recorn          Int     @default(0)
+  ts              BigInt? @default(0)
+  provider        String? @db.VarChar(45)
+
+  @@index([ID], map: "idx_payout_ID")
 }
 
 model payout_charges {
@@ -957,6 +1174,9 @@ model payout_charges {
   admin_com       Float?  @default(0) @db.Float
   user_id         BigInt? @default(0)
   mode            String? @default("imps") @db.VarChar(45)
+  provider        String? @db.VarChar(45)
+
+  @@index([ID], map: "idx_payout_charges_ID")
 }
 
 model pincode {
@@ -964,6 +1184,8 @@ model pincode {
   pin_code Int
   city     String @db.VarChar(50)
   states   String @db.VarChar(50)
+
+  @@index([ID], map: "idx_pincode_ID")
 }
 
 model plans {
@@ -971,25 +1193,13 @@ model plans {
   plan_name String @db.VarChar(100)
   type      String @default("all") @db.VarChar(100)
   user_id   Int?   @default(0)
-}
 
-model retailers {
-  id          Int               @id @default(autoincrement())
-  name        String            @db.VarChar(255)
-  email_id    String            @unique(map: "email_id") @db.VarChar(255)
-  address     String            @db.VarChar(500)
-  mobile_no   String            @unique(map: "mobile_no") @db.VarChar(15)
-  aadhar_no   String            @unique(map: "aadhar_no") @db.VarChar(12)
-  pan_no      String            @unique(map: "pan_no") @db.VarChar(10)
-  created_at  DateTime?         @default(now()) @db.Timestamp(0)
-  modified_at DateTime?         @default(now()) @db.Timestamp(0)
-  status      retailers_status? @default(Active)
-  partner_id  Int?
+  @@index([ID], map: "idx_plans_ID")
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model sale_force {
-  ID          Int      @default(0)
+  ID          Int      @id @default(autoincrement())
   name        String?  @db.VarChar(255)
   city        String?  @db.VarChar(100)
   state       String?  @db.VarChar(100)
@@ -999,6 +1209,7 @@ model sale_force {
   date        DateTime @db.DateTime(0)
   report_flag Int?     @default(0)
 
+  @@index([ID], map: "idx_sale_force_ID")
   @@ignore
 }
 
@@ -1006,6 +1217,11 @@ model services_filter {
   ID       Int     @id @default(autoincrement())
   service  String? @db.VarChar(45)
   api_type String? @db.VarChar(45)
+
+  @@index([api_type], map: "idx_ftr_api_type")
+  @@index([api_type], map: "idx_services_api_type")
+  @@index([ID], map: "idx_services_filter_ID")
+  @@index([api_type], map: "idx_services_filter_api_type")
 }
 
 model settings {
@@ -1022,6 +1238,8 @@ model settings {
   email        String  @db.VarChar(100)
   mobile       String  @db.VarChar(20)
   slogan       String? @db.VarChar(100)
+
+  @@index([ID], map: "idx_settings_ID")
 }
 
 model slab_pipe {
@@ -1040,6 +1258,8 @@ model sms_formate {
   sender_id   String? @db.VarChar(45)
   user_id     Int?    @default(0)
   key         String? @db.VarChar(100)
+
+  @@index([ID], map: "idx_sms_formate_ID")
 }
 
 model statements {
@@ -1050,7 +1270,7 @@ model statements {
   mode            Int     @default(1)
   prev_bal        Float?
   balance         Float?
-  tid             String  @db.VarChar(25)
+  tid             String  @default("-") @db.VarChar(100)
   api_tid         String  @default("-") @db.VarChar(50)
   channel         String  @default("-") @db.VarChar(20)
   operator_name   String  @default("-") @db.VarChar(100)
@@ -1064,7 +1284,6 @@ model statements {
   company_id      Int     @default(0)
   distributor_id  Int     @default(0)
   retailer_id     Int     @default(0)
-  merchant_id     Int     @default(0)
   admin_com       Float   @default(0) @db.Float
   super_com       Float?  @default(0) @db.Float
   company_com     Float   @default(0) @db.Float
@@ -1086,6 +1305,73 @@ model statements {
   provider        String? @db.VarChar(100)
   api_ref         String? @db.VarChar(100)
   recorn          Int?    @default(0) @db.TinyInt
+  recharge_amount Float?  @db.Float
+  parent_tid      String? @db.VarChar(100)
+  merchant_id     Int?    @default(0)
+
+  @@index([date], map: "idx_date")
+  @@index([ID, refund, api_type], map: "idx_id_refund_apitype")
+  @@index([mobile], map: "idx_mobile")
+  @@index([mobile, date, operator_name], map: "idx_mobile_date_operator")
+  @@index([refund, api_type, ID], map: "idx_refund_apitype_id")
+  @@index([retailer_id, refund, api_type], map: "idx_refund_check")
+  @@index([retailer_id, request_id], map: "idx_request")
+  @@index([retailer_id, date], map: "idx_retailer_date")
+  @@index([retailer_id], map: "idx_retailer_id")
+  @@index([admin_id, api_type], map: "idx_statements_adminid_type")
+  @@index([api_type, provider, status, tid], map: "idx_statements_all")
+  @@index([amount], map: "idx_statements_amount")
+  @@index([amount, status], map: "idx_statements_amount_status")
+  @@index([api_type, date], map: "idx_statements_api_type_date")
+  @@index([api_type, api_id, api_tid], map: "idx_statements_api_type_id_tid")
+  @@index([api_type, retailer_id], map: "idx_statements_api_type_retailer_id")
+  @@index([api_type, status], map: "idx_statements_api_type_status")
+  @@index([api_type, status, mobile, date], map: "idx_statements_api_type_status_service_mobile_date")
+  @@index([circle_id, api_id], map: "idx_statements_circle_api_id")
+  @@index([date], map: "idx_statements_date")
+  @@index([date, api_type], map: "idx_statements_date_api_type")
+  @@index([date, api_type, retailer_id], map: "idx_statements_date_api_type_retailer")
+  @@index([date, ID], map: "idx_statements_date_id")
+  @@index([date, retailer_id], map: "idx_statements_date_retailer")
+  @@index([date, retailer_id], map: "idx_statements_date_retailer_id")
+  @@index([date, retailer_id, refund], map: "idx_statements_date_retailer_refund")
+  @@index([date, retailer_id, mode], map: "idx_statements_date_retailer_txn_type")
+  @@index([date, status, api_type], map: "idx_statements_date_status_api_type")
+  @@index([date, status, ID], map: "idx_statements_date_status_id")
+  @@index([date, time, status], map: "idx_statements_date_time_status")
+  @@index([ID], map: "idx_statements_id")
+  @@index([mobile], map: "idx_statements_mobile")
+  @@index([mobile, retailer_id], map: "idx_statements_mobile_retailer_id")
+  @@index([mobile, tid], map: "idx_statements_mobile_tid")
+  @@index([mobile, tid, date], map: "idx_statements_mobile_tid_date")
+  @@index([mode], map: "idx_statements_mode")
+  @@index([op_id, api_id, refund, ts], map: "idx_statements_op_api_refund_ts")
+  @@index([op_id, date], map: "idx_statements_op_id_date")
+  @@index([refund, api_type], map: "idx_statements_refund_api_type")
+  @@index([request_id], map: "idx_statements_request_id")
+  @@index([request_id, retailer_id], map: "idx_statements_request_id_retailer_id")
+  @@index([request_id, retailer_id, api_type], map: "idx_statements_request_id_retailer_id_api_type")
+  @@index([retailer_id, date], map: "idx_statements_retailer_date")
+  @@index([retailer_id], map: "idx_statements_retailer_id")
+  @@index([retailer_id, balance], map: "idx_statements_retailer_id_balance")
+  @@index([retailer_id, request_id], map: "idx_statements_retailer_request")
+  @@index([retailer_id, tid], map: "idx_statements_retailer_tid")
+  @@index([retailer_id, api_type], map: "idx_statements_retailerid_type")
+  @@index([status], map: "idx_statements_status")
+  @@index([status, date], map: "idx_statements_status_date")
+  @@index([status, retailer_id], map: "idx_statements_status_retailer_id")
+  @@index([tid], map: "idx_statements_tid")
+  @@index([tid, status], map: "idx_statements_tid_status")
+  @@index([ts], map: "idx_statements_ts")
+  @@index([date, retailer_id, refund], map: "idx_statements_txn_date_retailer_refund")
+  @@index([date, status, api_type, mobile, tid], map: "idx_statements_txn_date_status_service_mobile_tid")
+  @@index([status], map: "idx_status")
+  @@index([status, api_type], map: "idx_status_api_type")
+  @@index([status, date], map: "idx_status_date")
+  @@index([tid, date], map: "idx_tid_date")
+  @@index([tid, retailer_id], map: "idx_tid_retailer_id")
+  @@index([mobile], map: "statements_idx_mobile")
+  @@index([tid], map: "statements_idx_tid")
 }
 
 model states {
@@ -1097,6 +1383,8 @@ model states {
   timestamp       DateTime @default(now()) @db.Timestamp(0)
   updateTimestamp DateTime @default(now()) @db.Timestamp(0)
   stateCode       String?  @db.VarChar(255)
+
+  @@index([stateId], map: "idx_states_stateId")
 }
 
 model status_check {
@@ -1109,6 +1397,11 @@ model status_check {
   counter  Int?    @default(0) @db.TinyInt
   user_id  Int?
   api_type String? @db.VarChar(50)
+  ts       BigInt? @default(0)
+
+  @@index([status, api_type, counter], map: "idx_status_api_type_counter")
+  @@index([ID], map: "idx_status_check_ID")
+  @@index([status, api_type, counter], map: "idx_statuscheck_status_api_counter")
 }
 
 model statuscode {
@@ -1116,6 +1409,8 @@ model statuscode {
   api_status    String? @db.VarChar(45)
   system_status String? @db.VarChar(45)
   api_message   String? @db.VarChar(100)
+
+  @@index([ID], map: "idx_statuscode_ID")
 }
 
 model system_settings {
@@ -1160,6 +1455,12 @@ model system_settings {
   verification         String? @db.VarChar(100)
   split                String? @db.VarChar(100)
   upi                  String? @db.VarChar(45)
+  payout_stop          String? @default("on") @db.VarChar(45)
+  network_payment      Float?  @default(0) @db.Float
+  payout_api           String? @db.VarChar(100)
+  special_dmt          String? @db.VarChar(100)
+
+  @@index([ID], map: "idx_system_settings_id")
 }
 
 model tds {
@@ -1172,11 +1473,16 @@ model tds {
   tds              Float  @db.Float
   date             String @db.VarChar(10)
   status           String @default("PENDING") @db.VarChar(50)
+
+  @@index([ID], map: "idx_tds_ID")
 }
 
 model test {
-  ID   Int       @id @default(autoincrement())
-  date DateTime? @default(now()) @db.DateTime(0)
+  ID        Int       @id @default(autoincrement())
+  date      DateTime? @default(now()) @db.DateTime(0)
+  cron_type String?   @db.VarChar(45)
+
+  @@index([ID], map: "idx_test_ID")
 }
 
 model transactiondata {
@@ -1193,23 +1499,45 @@ model transactiondata {
   utr                   String?  @db.VarChar(12)
   upiTransactionId      String?  @db.VarChar(255)
   user_id               String?  @default("0") @db.VarChar(100)
+
+  @@index([ID], map: "idx_TransactionData_ID")
 }
 
 model transactions {
-  id            Int       @id @default(autoincrement())
-  private_token String    @unique(map: "private_token") @db.VarChar(255)
-  amount        Float     @db.Float
-  date          DateTime  @db.DateTime(0)
-  user_id       Int
-  status        String    @db.VarChar(50)
-  error_code    String?   @db.VarChar(50)
-  created_at    DateTime? @default(now()) @db.DateTime(0)
-  updated_at    DateTime? @default(now()) @db.DateTime(0)
+  ID                     Int     @id @default(autoincrement())
+  date                   String? @db.VarChar(50)
+  time                   String? @db.VarChar(50)
+  mobile                 String? @db.VarChar(20)
+  status                 String? @db.VarChar(50)
+  amount                 String? @db.VarChar(50)
+  service_charge         String? @db.VarChar(50)
+  Commission             String? @db.VarChar(50)
+  Mode                   String? @db.VarChar(50)
+  Closing_Balance        String? @db.VarChar(100)
+  Txn_Type               String? @db.VarChar(50)
+  api_type               String? @db.VarChar(50)
+  retailer_shop          String? @db.VarChar(200)
+  Retailer_id            String? @db.VarChar(50)
+  operator_name          String? @db.VarChar(200)
+  message                String? @db.Text
+  TDS                    String? @db.VarChar(50)
+  Master_Dist_Commission String? @db.VarChar(50)
+  Distributor_Commission String? @db.VarChar(50)
+  Admin_Net              String? @db.VarChar(50)
+  utr                    String? @db.VarChar(100)
+  base_rate              String? @db.VarChar(50)
+  retailer_mobile        String  @db.VarChar(100)
+  Order_Id               String? @db.VarChar(100)
+  cron_status            Int?    @default(0)
+
+  @@index([ID], map: "idx_transactions_ID")
 }
 
 model unique_tid {
   TID BigInt
   ID  Int    @id @default(autoincrement())
+
+  @@index([ID], map: "idx_unique_tid_ID")
 }
 
 model upi_bank {
@@ -1217,6 +1545,8 @@ model upi_bank {
   name  String? @db.VarChar(100)
   code  String? @db.VarChar(45)
   input String? @default("mobile") @db.VarChar(45)
+
+  @@index([ID], map: "idx_upi_bank_ID")
 }
 
 model upi_details {
@@ -1227,6 +1557,8 @@ model upi_details {
   verified           Int?    @default(0)
   bank               String? @db.VarChar(100)
   beneficiary_mobile String? @default("NA") @db.VarChar(12)
+
+  @@index([ID], map: "idx_upi_details_ID")
 }
 
 model upi_statements {
@@ -1250,6 +1582,8 @@ model upi_statements {
   admin_com    Float?  @default(0) @db.Float
   api_com      Float?  @default(0) @db.Float
   user_com     Float?  @default(0) @db.Float
+
+  @@index([ID], map: "idx_upi_statements_ID")
 }
 
 model upi_user {
@@ -1266,12 +1600,17 @@ model upi_user {
   transactionLimit Float?  @db.Float
   minimumBalance   Float?  @db.Float
   bank_code        String? @db.VarChar(11)
+
+  @@index([ID], map: "idx_upi_user_ID")
 }
 
 model usage_charges {
   ID       Int     @id @default(autoincrement())
   user_id  Int?
   txn_date String? @db.VarChar(255)
+  status   String? @default("PENDING") @db.VarChar(45)
+
+  @@index([ID], map: "idx_usage_charges_ID")
 }
 
 model user_comm {
@@ -1284,6 +1623,10 @@ model user_comm {
   dist_com    Float  @db.Float
   retail_com  Float  @db.Float
   plan_id     Int?   @default(0)
+
+  @@index([operator_id, user_id, plan_id], map: "idx_user_comm")
+  @@index([ID], map: "idx_user_comm_ID")
+  @@index([operator_id, user_id, plan_id], map: "idx_user_comm_operator_id_user_id_plan_id")
 }
 
 model users_bank {
@@ -1297,6 +1640,8 @@ model users_bank {
   unique_id     String? @db.VarChar(100)
   cancel_cheque String? @db.VarChar(255)
   employee_id   Int?
+
+  @@index([ID], map: "idx_users_bank_ID")
 }
 
 model users_device_config {
@@ -1308,6 +1653,8 @@ model users_device_config {
   device_username String? @db.VarChar(45)
   device_id       String? @db.VarChar(100)
   type            String  @default("MTM") @db.VarChar(100)
+
+  @@index([ID], map: "idx_users_device_config_ID")
 }
 
 model users_onboard {
@@ -1360,6 +1707,8 @@ model users_onboard {
   biometric_status   Int     @default(0) @db.TinyInt
   employee_id        Int?
   checker_status     String? @default("PENDING") @db.VarChar(45)
+
+  @@index([ID], map: "idx_users_onboard_ID")
 }
 
 model verify_bank {
@@ -1368,6 +1717,8 @@ model verify_bank {
   bank_name     String @db.VarChar(100)
   account_no    String @db.VarChar(25)
   ifsc          String @db.VarChar(20)
+
+  @@index([ID], map: "idx_verify_bank_ID")
 }
 
 model virtual_account {
@@ -1385,6 +1736,8 @@ model virtual_account {
   date           String? @db.VarChar(20)
   time           String? @db.VarChar(20)
   charge         Float   @default(10) @db.Float
+
+  @@index([id], map: "idx_virtual_account_id")
 }
 
 model whitelist {
@@ -1394,9 +1747,1326 @@ model whitelist {
   date       String @db.VarChar(20)
   time       String @db.VarChar(20)
   status     String @default("PENDING") @db.VarChar(30)
+
+  @@index([ID], map: "idx_whitelist_ID")
+  @@index([user_id], map: "idx_whitelist_user_id")
+  @@index([user_id, ip_address, status], map: "idx_whitelist_user_ip_status")
 }
 
-enum retailers_status {
-  Active
-  Inactive
+/// This table is a partition table and requires additional setup for migrations. Visit https://pris.ly/d/partition-tables for more info.
+model api_logs2 {
+  ID                Int     @id @default(autoincrement())
+  type              String  @db.VarChar(30)
+  request_id        String? @db.VarChar(255)
+  request           String  @db.Text
+  response          String  @db.Text
+  date              String? @db.VarChar(20)
+  time              String? @db.VarChar(20)
+  status            String? @default("0") @db.VarChar(50)
+  mobile            String? @db.VarChar(20)
+  tid               String? @db.VarChar(45)
+  delay             Float?  @db.Float
+  action            String? @db.VarChar(50)
+  stm_id            BigInt? @default(0)
+  api_id            Int?
+  txn_type          String? @db.VarChar(100)
+  api_number        Int?
+  provider          String? @db.VarChar(100)
+  incoming_request  String? @db.Text
+  incoming_response String? @db.Text
+
+  @@unique([ID, date], map: "idx_unique_date")
+  @@index([mobile], map: "api_logs_idx_mobile")
+  @@index([tid], map: "api_logs_idx_tid")
+  @@index([api_number, status], map: "idx_api_logs_api_number_status")
+  @@index([date, time, status, mobile, tid, txn_type, type, request_id, provider, api_id, api_number, delay, stm_id], map: "idx_api_logs_composite_max")
+  @@index([date, delay], map: "idx_api_logs_date_delay")
+  @@index([date, provider, status], map: "idx_api_logs_date_provider_status")
+  @@index([date, response(length: 555), status, type], map: "idx_api_logs_date_response_status_type")
+  @@index([date, tid], map: "idx_api_logs_date_tid")
+  @@index([date, tid, status], map: "idx_api_logs_date_tid_status")
+  @@index([date, time, status], map: "idx_api_logs_date_time_status")
+  @@index([mobile, status], map: "idx_api_logs_mobile_status")
+  @@index([provider, type], map: "idx_api_logs_provider_type")
+  @@index([request_id, api_id], map: "idx_api_logs_request_id_api_id")
+  @@index([status, date, tid, provider, txn_type, mobile], map: "idx_api_logs_status_date_tid")
+  @@index([date, time, delay, api_id, status, tid], map: "idx_api_logs_time_delay")
+  @@index([txn_type, status], map: "idx_api_logs_txn_type_status")
+  @@index([date], map: "idx_date")
+  @@index([provider], map: "idx_provider")
+  @@index([provider, tid, date], map: "idx_provider_tid_date")
+  @@index([tid], map: "idx_tid")
+}
+
+/// This table is a partition table and requires additional setup for migrations. Visit https://pris.ly/d/partition-tables for more info.
+model api_logs3 {
+  ID                Int     @id @default(autoincrement())
+  type              String  @db.VarChar(30)
+  request_id        String? @db.VarChar(255)
+  request           String  @db.Text
+  response          String  @db.Text
+  date              String? @db.VarChar(20)
+  time              String? @db.VarChar(20)
+  status            String? @default("0") @db.VarChar(50)
+  mobile            String? @db.VarChar(20)
+  tid               String? @db.VarChar(45)
+  delay             Float?  @db.Float
+  action            String? @db.VarChar(50)
+  stm_id            BigInt? @default(0)
+  api_id            Int?
+  txn_type          String? @db.VarChar(100)
+  api_number        Int?
+  provider          String? @db.VarChar(100)
+  incoming_request  String? @db.Text
+  incoming_response String? @db.Text
+
+  @@unique([ID, date], map: "idx_unique_date")
+  @@index([mobile], map: "api_logs_idx_mobile")
+  @@index([tid], map: "api_logs_idx_tid")
+  @@index([api_number, status], map: "idx_api_logs_api_number_status")
+  @@index([date, time, status, mobile, tid, txn_type, type, request_id, provider, api_id, api_number, delay, stm_id], map: "idx_api_logs_composite_max")
+  @@index([date, delay], map: "idx_api_logs_date_delay")
+  @@index([date, provider, status], map: "idx_api_logs_date_provider_status")
+  @@index([date, response(length: 555), status, type], map: "idx_api_logs_date_response_status_type")
+  @@index([date, tid], map: "idx_api_logs_date_tid")
+  @@index([date, tid, status], map: "idx_api_logs_date_tid_status")
+  @@index([date, time, status], map: "idx_api_logs_date_time_status")
+  @@index([mobile, status], map: "idx_api_logs_mobile_status")
+  @@index([provider, type], map: "idx_api_logs_provider_type")
+  @@index([request_id, api_id], map: "idx_api_logs_request_id_api_id")
+  @@index([status, date, tid, provider, txn_type, mobile], map: "idx_api_logs_status_date_tid")
+  @@index([date, time, delay, api_id, status, tid], map: "idx_api_logs_time_delay")
+  @@index([txn_type, status], map: "idx_api_logs_txn_type_status")
+  @@index([date], map: "idx_date")
+  @@index([provider], map: "idx_provider")
+  @@index([provider, tid, date], map: "idx_provider_tid_date")
+  @@index([tid], map: "idx_tid")
+}
+
+model auth_group {
+  ID   Int    @id @default(autoincrement())
+  name String @unique(map: "name") @db.VarChar(150)
+}
+
+model auth_group_permissions {
+  ID            BigInt @id @default(autoincrement())
+  group_id      Int
+  permission_id Int
+
+  @@unique([group_id, permission_id], map: "auth_group_permissions_group_id_permission_id_0cd325b0_uniq")
+  @@index([permission_id], map: "auth_group_permissio_permission_id_84c5c92e_fk_auth_perm")
+}
+
+model auth_permission {
+  ID              Int    @id @default(autoincrement())
+  name            String @db.VarChar(255)
+  content_type_id Int
+  codename        String @db.VarChar(100)
+
+  @@unique([content_type_id, codename], map: "auth_permission_content_type_id_codename_01ab375a_uniq")
+}
+
+model auth_user {
+  ID           Int       @id @default(autoincrement())
+  password     String    @db.VarChar(128)
+  last_login   DateTime? @db.DateTime(6)
+  is_superuser Boolean
+  username     String    @unique(map: "username") @db.VarChar(150)
+  first_name   String    @db.VarChar(150)
+  last_name    String    @db.VarChar(150)
+  email        String    @db.VarChar(254)
+  is_staff     Boolean
+  is_active    Boolean
+  date_joined  DateTime  @db.DateTime(6)
+}
+
+model auth_user_groups {
+  ID       BigInt @id @default(autoincrement())
+  user_id  Int
+  group_id Int
+
+  @@unique([user_id, group_id], map: "auth_user_groups_user_id_group_id_94350c0c_uniq")
+  @@index([group_id], map: "auth_user_groups_group_id_97559544_fk_auth_group_id")
+}
+
+model auth_user_user_permissions {
+  ID            BigInt @id @default(autoincrement())
+  user_id       Int
+  permission_id Int
+
+  @@unique([user_id, permission_id], map: "auth_user_user_permissions_user_id_permission_id_14a6b632_uniq")
+  @@index([permission_id], map: "auth_user_user_permi_permission_id_1fbb5f2c_fk_auth_perm")
+}
+
+model backup_api_logs {
+  ID         Int     @id @default(autoincrement())
+  type       String  @db.VarChar(30)
+  request_id String? @db.VarChar(255)
+  request    String  @db.Text
+  response   String  @db.Text
+  date       String? @db.VarChar(20)
+  time       String? @db.VarChar(20)
+  status     String? @default("0") @db.VarChar(50)
+  mobile     String? @db.VarChar(20)
+  tid        String? @db.VarChar(45)
+  delay      Float?  @db.Float
+  action     String? @db.VarChar(50)
+  stm_id     BigInt? @default(0)
+  api_id     Int?
+  txn_type   String? @db.VarChar(100)
+  api_number Int?
+  provider   String? @db.VarChar(45)
+
+  @@index([ID], map: "idx_backup_api_logs_ID")
+}
+
+model backup_balance_request {
+  ID          BigInt  @id @default(autoincrement())
+  name        String  @db.VarChar(150)
+  date        String  @db.VarChar(10)
+  time        String  @db.VarChar(12)
+  amount      Float   @db.Float
+  mode        String  @db.VarChar(30)
+  tid         String  @db.VarChar(30)
+  utr         String? @db.VarChar(50)
+  bank        String  @db.VarChar(50)
+  trans_date  String  @db.VarChar(20)
+  remark      String  @db.VarChar(150)
+  reason      String? @db.VarChar(255)
+  admin_id    Int
+  user_id     Int
+  status      String  @default("PENDING") @db.VarChar(30)
+  approval    Int     @default(0)
+  employee_id Int     @default(0)
+  recorn      Int?    @default(0)
+
+  @@index([ID], map: "idx_backup_balance_request_ID")
+}
+
+model backup_outstanding_stm {
+  ID          BigInt @id @default(autoincrement())
+  amount      Float  @db.Float
+  date        String @db.VarChar(20)
+  time        String @db.VarChar(20)
+  dist_id     Int
+  retailer_id Int
+  remark      String @db.Text
+
+  @@index([ID], map: "idx_backup_outstanding_stm_ID")
+}
+
+model backup_payout {
+  ID              BigInt  @id @default(autoincrement())
+  spr_id          String? @db.VarChar(45)
+  status          String  @db.VarChar(100)
+  message         String  @db.VarChar(300)
+  amount          Float   @db.Float
+  mode            Int     @default(1)
+  prev_bal        Float
+  balance         Float
+  total_amt       Float?  @default(0) @db.Float
+  tid             String  @db.VarChar(25)
+  bank_ref        String  @default("-") @db.VarChar(50)
+  txn_type        String  @default("-") @db.VarChar(50)
+  mobile          String  @default("-") @db.VarChar(12)
+  date            String  @db.VarChar(10)
+  time            String  @db.VarChar(10)
+  admin_id        Int     @default(0)
+  super_id        Int?    @default(0)
+  company_id      Int     @default(0)
+  distributor_id  Int     @default(0)
+  retailer_id     Int     @default(0)
+  admin_com       Float   @default(0) @db.Float
+  super_com       Float?  @default(0) @db.Float
+  company_com     Float   @default(0) @db.Float
+  distributor_com Float   @default(0) @db.Float
+  retailer_com    Float   @default(0) @db.Float
+  tds             Float?  @default(0) @db.Float
+  api_type        String  @default("DEFAULT") @db.VarChar(30)
+  api_com         Float   @default(0) @db.Float
+  api_mode        Int     @default(0)
+  refund          Int     @default(0)
+  request_id      String  @default("0") @db.VarChar(50)
+  base_rate       Float?  @default(0) @db.Float
+  bank_rrn        String? @db.VarChar(45)
+  api_ref_id      String? @db.VarChar(45)
+  response_code   String? @db.VarChar(45)
+  terminal_id     String? @db.VarChar(100)
+  service_charge  Float?  @default(0) @db.Float
+  cardno          String? @db.VarChar(100)
+  retailer_charge Float?  @default(0) @db.Float
+  recorn          Int     @default(0)
+  ts              BigInt? @default(0)
+  provider        String? @db.VarChar(45)
+
+  @@index([ID], map: "idx_backup_payout_ID")
+}
+
+model backup_statements {
+  ID              BigInt  @id @default(autoincrement())
+  status          String  @db.VarChar(100)
+  message         String  @db.VarChar(300)
+  amount          Float   @db.Float
+  mode            Int     @default(1)
+  prev_bal        Float?
+  balance         Float?
+  tid             String  @default("-") @db.VarChar(50)
+  api_tid         String  @default("-") @db.VarChar(50)
+  channel         String  @default("-") @db.VarChar(20)
+  operator_name   String  @default("-") @db.VarChar(100)
+  customer_name   String  @default("-") @db.VarChar(50)
+  account         String  @default("-") @db.VarChar(50)
+  mobile          String  @default("-") @db.VarChar(12)
+  date            String  @db.VarChar(10)
+  time            String  @db.VarChar(10)
+  admin_id        Int     @default(0)
+  super_id        Int?    @default(0)
+  company_id      Int     @default(0)
+  distributor_id  Int     @default(0)
+  retailer_id     Int     @default(0)
+  admin_com       Float   @default(0) @db.Float
+  super_com       Float?  @default(0) @db.Float
+  company_com     Float   @default(0) @db.Float
+  distributor_com Float   @default(0) @db.Float
+  retailer_com    Float   @default(0) @db.Float
+  retailer_mode   Int     @default(0)
+  api_type        String  @default("DEFAULT") @db.VarChar(30)
+  api_com         Float   @default(0) @db.Float
+  api_mode        Int     @default(0)
+  cashback        Float   @default(0) @db.Float
+  refund          Int     @default(0)
+  op_id           Int?
+  circle_id       Int?
+  api_id          Int?
+  request_id      String  @default("0") @db.VarChar(50)
+  ts              BigInt? @default(0)
+  tds             Float?  @default(0) @db.Float
+  base_rate       Float?  @default(0) @db.Float
+  provider        String? @db.VarChar(100)
+  api_ref         String? @db.VarChar(100)
+  recorn          Int?    @default(0) @db.TinyInt
+
+  @@index([api_type], map: "idx_api_type")
+  @@index([api_type], map: "idx_backup_api_type")
+  @@index([retailer_id], map: "idx_backup_ret_id")
+  @@index([ID], map: "idx_backup_statements_ID")
+  @@index([tid], map: "idx_backup_tid")
+}
+
+model bank_account_whitelist {
+  ID             Int       @id @default(autoincrement())
+  user_id        Int?
+  account_number String?   @db.VarChar(45)
+  ifsc           String?   @db.VarChar(45)
+  holder_name    String?   @db.VarChar(100)
+  created_at     DateTime? @default(now()) @db.Timestamp(0)
+  updated_at     DateTime? @default(now()) @db.Timestamp(0)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model bbps_biller_details_updatecounts {
+  ID         Int?
+  count      Int?
+  created_at String? @db.Text
+
+  @@ignore
+}
+
+model bbps_comm {
+  ID              Int      @id @default(autoincrement())
+  user_id         Int
+  amt_from        Decimal? @default(0.000) @db.Decimal(10, 3)
+  amt_to          Decimal? @default(0.000) @db.Decimal(10, 3)
+  operator_id     Int?
+  com_type        String?  @db.VarChar(45)
+  super_com       Decimal? @db.Decimal(10, 3)
+  service_charge  Decimal? @db.Decimal(10, 3)
+  retailer_charge Decimal? @db.Decimal(10, 3)
+  retailer_com    Decimal? @db.Decimal(10, 3)
+  dist            Decimal? @db.Decimal(10, 3)
+  company         Decimal? @db.Decimal(10, 3)
+  super           Decimal? @db.Decimal(10, 3)
+  admin           Decimal? @db.Decimal(10, 3)
+  api             Decimal? @db.Decimal(10, 3)
+
+  @@index([ID], map: "idx_bbps_comm_ID")
+}
+
+model bbps_operator_details {
+  primary_id  Int       @id @default(autoincrement())
+  ID          Int
+  referenceid String?   @db.VarChar(100)
+  name        String?   @db.VarChar(1000)
+  category    String?   @db.VarChar(100)
+  coverage    String?   @db.VarChar(100)
+  params      String?   @db.Text
+  updated_at  DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([primary_id], map: "idx_bbps_operator_details_primary_id")
+}
+
+model bbps_operator_details2 {
+  primary_id  Int       @id @default(autoincrement())
+  ID          Int
+  referenceid String?   @db.VarChar(100)
+  name        String?   @db.VarChar(1000)
+  category    String?   @db.VarChar(100)
+  coverage    String?   @db.VarChar(100)
+  params      String?   @db.Text
+  updated_at  DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([primary_id], map: "idx_bbps_operator_details_primary_id")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model bbps_providers {
+  ID                    Int?
+  providerid            Int?
+  vendorid              Int?
+  producttypeid         Int?
+  providertypeid        Int?
+  username              String? @db.Text
+  password              String? @db.Text
+  apikey                String? @db.Text
+  displayname           String? @db.Text
+  credentials           Json?
+  operatorid            Int?
+  monthlymaxlimit       Int?
+  weeklymaxlimit        Int?
+  dailymaxlimit         Int?
+  monthlymaxcount       Int?
+  weeklymaxcount        Int?
+  dailymaxcount         Int?
+  createdat             String? @db.Text
+  updatedat             String? @db.Text
+  activestatus          String? @db.Text
+  istds                 String? @db.Text
+  isgst                 String? @db.Text
+  productreference      String? @db.Text
+  limits                Int?
+  singleminilimit       Int?
+  singlemaxlimit        Int?
+  balance               Int?
+  callbackurl           String? @db.Text
+  validtill             String? @db.Text
+  iswalletavailable     String? @db.Text
+  islocalwalletincluded String? @db.Text
+  isremmitterneeded     String? @db.Text
+  iskycneeded           String? @db.Text
+  isbeneficiaryneeded   String? @db.Text
+  isregistrationneeded  String? @db.Text
+  vendorcode            String? @db.Text
+
+  @@ignore
+}
+
+model callback_sent {
+  ID                    Int     @id @default(autoincrement())
+  tid                   String? @db.VarChar(100)
+  status                String? @db.VarChar(10)
+  callback              String? @db.VarChar(10)
+  callback_pending      String? @db.VarChar(10)
+  callback_failure      String? @db.VarChar(10)
+  date                  String? @db.VarChar(15)
+  api_callback          String? @db.Text
+  api_callback_response String? @db.Text
+
+  @@index([ID], map: "idx_callback_sent_ID")
+}
+
+model commission1 {
+  ID                  Int     @id @default(autoincrement())
+  plan_id             Int     @default(0)
+  amt_from            Float   @default(0) @db.Float
+  amt_to              Float   @default(0) @db.Float
+  com_type            String  @default("flat") @db.VarChar(50)
+  service_charge      Float   @default(0) @db.Float
+  retailer_charge     Float   @default(0) @db.Float
+  retailer_commission Float   @default(0) @db.Float
+  dist                Float   @default(0) @db.Float
+  company             Float   @default(0) @db.Float
+  super               Float?  @default(0) @db.Float
+  admin               Float   @default(0) @db.Float
+  api                 Float   @default(0) @db.Float
+  user_id             Int     @default(0)
+  base_rate           Float?  @default(0) @db.Float
+  service             String? @db.VarChar(45)
+
+  @@index([ID], map: "idx_commission_ID")
+  @@index([plan_id], map: "idx_commission_plan_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model django_admin_log {
+  id              Int      @id @default(autoincrement())
+  action_time     DateTime @db.DateTime(6)
+  object_id       String?  @db.LongText
+  object_repr     String   @db.VarChar(200)
+  action_flag     Int      @db.UnsignedSmallInt
+  change_message  String   @db.LongText
+  content_type_id Int?
+  user_id         Int
+
+  @@index([content_type_id], map: "django_admin_log_content_type_id_c4bce8eb_fk_django_co")
+  @@index([user_id], map: "django_admin_log_user_id_c564eba6_fk_auth_user_id")
+}
+
+model django_content_type {
+  id        Int    @id @default(autoincrement())
+  app_label String @db.VarChar(100)
+  model     String @db.VarChar(100)
+
+  @@unique([app_label, model], map: "django_content_type_app_label_model_76bd3d3b_uniq")
+}
+
+model django_migrations {
+  id      BigInt   @id @default(autoincrement())
+  app     String   @db.VarChar(255)
+  name    String   @db.VarChar(255)
+  applied DateTime @db.DateTime(6)
+}
+
+model django_session {
+  session_key  String   @id @db.VarChar(40)
+  session_data String   @db.LongText
+  expire_date  DateTime @db.DateTime(6)
+
+  @@index([expire_date], map: "django_session_expire_date_a5c62663")
+}
+
+model email_auto_approve {
+  ID               Int       @id @default(autoincrement())
+  message_id       String    @unique(map: "message_id") @db.VarChar(255)
+  sender_email     String?   @db.VarChar(255)
+  sender           String?   @db.VarChar(100)
+  subject          String?   @db.Text
+  body             String?   @db.Text
+  UTR              String?   @db.VarChar(100)
+  amount           String?   @db.VarChar(100)
+  mode             String?   @db.VarChar(100)
+  transaction_type String?   @db.VarChar(45)
+  account_number   String?   @db.VarChar(100)
+  received_at      DateTime? @default(now()) @db.Timestamp(0)
+  approved         Int?      @default(0) @db.TinyInt
+}
+
+model email_auto_approve1 {
+  ID               Int       @id @default(autoincrement())
+  message_id       String    @unique(map: "message_id") @db.VarChar(255)
+  sender_email     String?   @db.VarChar(255)
+  sender           String?   @db.VarChar(100)
+  subject          String?   @db.Text
+  body             String?   @db.Text
+  UTR              String?   @db.VarChar(100)
+  amount           String?   @db.VarChar(100)
+  mode             String?   @db.VarChar(100)
+  transaction_type String?   @db.VarChar(45)
+  account_number   String?   @db.VarChar(100)
+  received_at      DateTime? @default(now()) @db.Timestamp(0)
+  approved         Int?      @default(0) @db.TinyInt
+}
+
+model employee_permissions {
+  ID          Int     @id @default(autoincrement())
+  empTypeID   Int
+  permissions String? @db.Text
+}
+
+model employee_types {
+  ID   Int     @id @default(autoincrement())
+  type String? @db.VarChar(45)
+}
+
+model escrow_payee {
+  ID            Int       @id @default(autoincrement())
+  PayeeID       String?   @db.VarChar(45)
+  IFSC          String?   @db.VarChar(45)
+  AccountNumber String?   @db.VarChar(45)
+  Bank          String?   @db.VarChar(100)
+  UPI           String?   @db.VarChar(100)
+  status        String?   @db.VarChar(45)
+  createdAt     DateTime? @default(now()) @db.Timestamp(0)
+  updatedAt     DateTime? @default(now()) @db.Timestamp(0)
+}
+
+model failed_to_success {
+  id            Int     @id @default(autoincrement())
+  Date          String? @db.VarChar(255)
+  order_id      String? @db.VarChar(255)
+  Amount        Int?
+  out_status    String? @db.VarChar(50)
+  vendor_status String? @db.VarChar(50)
+  Mobile_No     String? @map("Mobile No") @db.VarChar(15)
+
+  @@index([id], map: "idx_failed_to_success_id")
+}
+
+model incoming_request_response {
+  ID                Int     @id @default(autoincrement())
+  tid               String? @db.VarChar(30)
+  time              String? @db.VarChar(20)
+  date              String? @db.VarChar(20)
+  incoming_request  String? @db.Text
+  incoming_response String? @db.Text
+  pipe              String? @db.VarChar(10)
+
+  @@index([date, time], map: "idx_date_time")
+  @@index([ID], map: "idx_incoming_request_response_ID")
+  @@index([pipe, tid], map: "idx_pipe_tid")
+  @@fulltext([incoming_request], map: "idx_request_text")
+  @@fulltext([incoming_response], map: "idx_response_text")
+}
+
+model incoming_request_response2 {
+  ID                Int     @id @default(autoincrement())
+  tid               String? @db.VarChar(30)
+  time              String? @db.VarChar(20)
+  date              String? @db.VarChar(20)
+  incoming_request  String? @db.Text
+  incoming_response String? @db.Text
+  pipe              String? @db.VarChar(10)
+
+  @@index([ID], map: "idx_incoming_request_response_ID")
+}
+
+/// This table is a partition table and requires additional setup for migrations. Visit https://pris.ly/d/partition-tables for more info.
+model instantpay_api_logs {
+  ID         Int     @id @default(autoincrement())
+  type       String  @db.VarChar(30)
+  request_id String? @db.VarChar(255)
+  request    String  @db.Text
+  response   String  @db.Text
+  date       String? @db.VarChar(20)
+  time       String? @db.VarChar(20)
+  status     String? @default("0") @db.VarChar(50)
+  mobile     String? @db.VarChar(20)
+  tid        String? @db.VarChar(45)
+  delay      Float?  @db.Float
+  action     String? @db.VarChar(50)
+  stm_id     BigInt? @default(0)
+  api_id     Int?
+  txn_type   String? @db.VarChar(100)
+  api_number Int?
+  provider   String? @db.VarChar(100)
+
+  @@unique([ID, date], map: "idx_unique_date")
+  @@index([mobile], map: "api_logs_idx_mobile")
+  @@index([tid], map: "api_logs_idx_tid")
+  @@index([api_id], map: "idx_api_id")
+  @@index([api_number, status], map: "idx_api_logs_api_number_status")
+  @@index([date, time, status, mobile, tid, txn_type, type, request_id, provider, api_id, api_number, delay, stm_id], map: "idx_api_logs_composite_max")
+  @@index([date, delay], map: "idx_api_logs_date_delay")
+  @@index([date, provider, status], map: "idx_api_logs_date_provider_status")
+  @@index([date, response(length: 555), status, type], map: "idx_api_logs_date_response_status_type")
+  @@index([date, tid], map: "idx_api_logs_date_tid")
+  @@index([date, tid, status], map: "idx_api_logs_date_tid_status")
+  @@index([date, time, status], map: "idx_api_logs_date_time_status")
+  @@index([mobile, status], map: "idx_api_logs_mobile_status")
+  @@index([provider, type], map: "idx_api_logs_provider_type")
+  @@index([request_id, api_id], map: "idx_api_logs_request_id_api_id")
+  @@index([status, date, tid, provider, txn_type, mobile], map: "idx_api_logs_status_date_tid")
+  @@index([date, time, delay, api_id, status, tid], map: "idx_api_logs_time_delay")
+  @@index([txn_type, status], map: "idx_api_logs_txn_type_status")
+  @@index([mobile], map: "idx_mobile")
+  @@index([request_id], map: "idx_request_id")
+  @@index([status], map: "idx_status")
+  @@index([tid], map: "idx_tid")
+}
+
+model instantpay_status_check {
+  ID                    Int     @id @default(autoincrement())
+  statuscode            String? @db.VarChar(50)
+  transactionStatusCode String? @db.VarChar(50)
+  status                String? @db.VarChar(50)
+}
+
+model kyc_details_partner_merchant {
+  ID                     Int     @id @default(autoincrement())
+  merchantID             String  @db.VarChar(45)
+  panDetails             String? @db.VarChar(45)
+  panBase64              String? @db.VarChar(500)
+  panVerified            Int?    @db.TinyInt
+  aadhaarDetails         String? @db.VarChar(45)
+  aadhaarBase64          String? @db.VarChar(500)
+  aadhaarVerified        Int?    @db.TinyInt
+  passportDetails        String? @db.VarChar(45)
+  passportBase64         String? @db.VarChar(500)
+  passportVerified       Int?    @db.TinyInt
+  drivingLicenseDetails  String? @db.VarChar(45)
+  dlBase64               String? @db.VarChar(500)
+  drivingLicenseVerified Int?    @db.TinyInt
+  gstDetails             String? @db.VarChar(100)
+  gstVerified            Int?    @db.TinyInt
+  voterIDDetails         String? @db.VarChar(45)
+  voterIDBase64          String? @db.VarChar(500)
+  voterIDVerified        Int?    @db.TinyInt
+
+  @@index([ID], map: "idx_kyc_details_ID")
+}
+
+model migration_status {
+  table_name       String    @id @db.VarChar(100)
+  last_synced_date DateTime? @db.Date
+}
+
+model new_rr_card_commission {
+  ID           Int     @id @default(autoincrement())
+  price        Float   @db.Float
+  gst          Int
+  user_type    String? @db.VarChar(50)
+  user_id      Int
+  product_type String? @db.VarChar(50)
+
+  @@index([ID], map: "idx_new_rr_card_commission_ID")
+}
+
+model new_table {
+  ID       Int     @id @default(autoincrement())
+  user_id  Int?    @default(0)
+  txn_date String? @db.VarChar(45)
+
+  @@index([ID], map: "idx_new_table_ID")
+}
+
+model payout_pipes {
+  ID     Int     @id @default(autoincrement())
+  Name   String? @db.VarChar(45)
+  Status Int?    @default(0) @db.TinyInt
+}
+
+model penny_drop_pipes {
+  ID       Int      @id @default(autoincrement())
+  name     String?  @db.VarChar(45)
+  buy_rate Decimal? @default(0.000) @db.Decimal(10, 3)
+  status   Int?     @default(0) @db.TinyInt
+}
+
+model provider {
+  ID           Int     @id
+  name         String? @db.Text
+  code         String? @db.Text
+  ischargers   String? @db.Text
+  activestatus String? @db.Text
+  createdat    String? @db.Text
+  updatedat    String? @db.Text
+}
+
+model refund_source {
+  ID        Int       @id @default(autoincrement())
+  tid       String?   @db.VarChar(100)
+  source    String?   @db.VarChar(100)
+  createdAt DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([ID], map: "idx_refund_source_ID")
+}
+
+model sale_force_report {
+  ID              Int      @id @default(autoincrement())
+  date            DateTime @db.Date
+  amount          BigInt   @default(0)
+  net             Int      @default(0)
+  gross           Int      @default(0)
+  txn_count       Int      @default(0)
+  service         String?  @db.VarChar(100)
+  state           String?  @db.VarChar(100)
+  city            String?  @db.VarChar(100)
+  user_id         Int?     @default(0)
+  rsm_id          Int?     @default(0)
+  asm_id          Int?     @default(0)
+  sale_force_name String?  @db.VarChar(255)
+  portal          String?  @default("new") @db.VarChar(45)
+
+  @@index([ID], map: "idx_sale_force_report_ID")
+}
+
+model service_providers {
+  ID     Int     @id @default(autoincrement())
+  name   String? @db.VarChar(100)
+  status Int?    @default(1) @db.TinyInt
+}
+
+model sms_processor {
+  ID         BigInt    @id @default(autoincrement())
+  threadId   Int?
+  address    String?   @db.VarChar(255)
+  body       String?   @db.LongText
+  read       Boolean
+  date       DateTime? @db.DateTime(6)
+  subId      Int?
+  dateSent   DateTime? @db.DateTime(6)
+  kind       String?   @db.VarChar(100)
+  state      String    @db.VarChar(100)
+  created_at DateTime  @db.DateTime(6)
+  messageId  String?   @unique(map: "messageId") @db.VarChar(255)
+}
+
+model statements2 {
+  ID              BigInt  @id @default(autoincrement())
+  status          String  @db.VarChar(100)
+  message         String  @db.VarChar(300)
+  amount          Float   @db.Float
+  mode            Int     @default(1)
+  prev_bal        Float?
+  balance         Float?
+  tid             String  @default("-") @db.VarChar(100)
+  api_tid         String  @default("-") @db.VarChar(50)
+  channel         String  @default("-") @db.VarChar(20)
+  operator_name   String  @default("-") @db.VarChar(100)
+  customer_name   String  @default("-") @db.VarChar(50)
+  account         String  @default("-") @db.VarChar(50)
+  mobile          String  @default("-") @db.VarChar(12)
+  date            String  @db.VarChar(10)
+  time            String  @db.VarChar(10)
+  admin_id        Int     @default(0)
+  super_id        Int?    @default(0)
+  company_id      Int     @default(0)
+  distributor_id  Int     @default(0)
+  retailer_id     Int     @default(0)
+  admin_com       Float   @default(0) @db.Float
+  super_com       Float?  @default(0) @db.Float
+  company_com     Float   @default(0) @db.Float
+  distributor_com Float   @default(0) @db.Float
+  retailer_com    Float   @default(0) @db.Float
+  retailer_mode   Int     @default(0)
+  api_type        String  @default("DEFAULT") @db.VarChar(30)
+  api_com         Float   @default(0) @db.Float
+  api_mode        Int     @default(0)
+  cashback        Float   @default(0) @db.Float
+  refund          Int     @default(0)
+  op_id           Int?
+  circle_id       Int?
+  api_id          Int?
+  request_id      String  @default("0") @db.VarChar(50)
+  ts              BigInt? @default(0)
+  tds             Float?  @default(0) @db.Float
+  base_rate       Float?  @default(0) @db.Float
+  provider        String? @db.VarChar(100)
+  api_ref         String? @db.VarChar(100)
+  recorn          Int?    @default(0) @db.TinyInt
+  recharge_amount Float?  @db.Float
+
+  @@index([retailer_id], map: "idx_retailer_id")
+  @@index([admin_id, api_type], map: "idx_statements_adminid_type")
+  @@index([api_type, provider, status, tid], map: "idx_statements_all")
+  @@index([amount], map: "idx_statements_amount")
+  @@index([amount, status], map: "idx_statements_amount_status")
+  @@index([api_type, date], map: "idx_statements_api_type_date")
+  @@index([api_type, api_id, api_tid], map: "idx_statements_api_type_id_tid")
+  @@index([api_type, retailer_id], map: "idx_statements_api_type_retailer_id")
+  @@index([api_type, status], map: "idx_statements_api_type_status")
+  @@index([api_type, status, mobile, date], map: "idx_statements_api_type_status_service_mobile_date")
+  @@index([circle_id, api_id], map: "idx_statements_circle_api_id")
+  @@index([date], map: "idx_statements_date")
+  @@index([date, api_type], map: "idx_statements_date_api_type")
+  @@index([date, api_type, retailer_id], map: "idx_statements_date_api_type_retailer")
+  @@index([date, ID], map: "idx_statements_date_id")
+  @@index([date, retailer_id], map: "idx_statements_date_retailer")
+  @@index([date, retailer_id], map: "idx_statements_date_retailer_id")
+  @@index([date, retailer_id, refund], map: "idx_statements_date_retailer_refund")
+  @@index([date, retailer_id, mode], map: "idx_statements_date_retailer_txn_type")
+  @@index([date, status, api_type], map: "idx_statements_date_status_api_type")
+  @@index([date, status, ID], map: "idx_statements_date_status_id")
+  @@index([date, time, status], map: "idx_statements_date_time_status")
+  @@index([ID], map: "idx_statements_id")
+  @@index([mobile], map: "idx_statements_mobile")
+  @@index([mobile, retailer_id], map: "idx_statements_mobile_retailer_id")
+  @@index([mobile, tid], map: "idx_statements_mobile_tid")
+  @@index([mobile, tid, date], map: "idx_statements_mobile_tid_date")
+  @@index([mode], map: "idx_statements_mode")
+  @@index([op_id, api_id, refund, ts], map: "idx_statements_op_api_refund_ts")
+  @@index([op_id, date], map: "idx_statements_op_id_date")
+  @@index([request_id], map: "idx_statements_request_id")
+  @@index([request_id, retailer_id, api_type], map: "idx_statements_request_id_retailer_id_api_type")
+  @@index([retailer_id, date], map: "idx_statements_retailer_date")
+  @@index([retailer_id], map: "idx_statements_retailer_id")
+  @@index([retailer_id, balance], map: "idx_statements_retailer_id_balance")
+  @@index([retailer_id, api_type], map: "idx_statements_retailerid_type")
+  @@index([status], map: "idx_statements_status")
+  @@index([status, date], map: "idx_statements_status_date")
+  @@index([status, retailer_id], map: "idx_statements_status_retailer_id")
+  @@index([tid], map: "idx_statements_tid")
+  @@index([tid, status], map: "idx_statements_tid_status")
+  @@index([date, retailer_id, refund], map: "idx_statements_txn_date_retailer_refund")
+  @@index([date, status, api_type, mobile, tid], map: "idx_statements_txn_date_status_service_mobile_tid")
+  @@index([tid, retailer_id], map: "idx_tid_retailer_id")
+  @@index([mobile], map: "statements_idx_mobile")
+  @@index([tid], map: "statements_idx_tid")
+}
+
+model statements_3 {
+  ID              BigInt  @id @default(autoincrement())
+  status          String  @db.VarChar(100)
+  message         String  @db.VarChar(300)
+  amount          Float   @db.Float
+  mode            Int     @default(1)
+  prev_bal        Float?
+  balance         Float?
+  tid             String  @default("-") @db.VarChar(100)
+  api_tid         String  @default("-") @db.VarChar(50)
+  channel         String  @default("-") @db.VarChar(20)
+  operator_name   String  @default("-") @db.VarChar(100)
+  customer_name   String  @default("-") @db.VarChar(50)
+  account         String  @default("-") @db.VarChar(50)
+  mobile          String  @default("-") @db.VarChar(12)
+  date            String  @db.VarChar(10)
+  time            String  @db.VarChar(10)
+  admin_id        Int     @default(0)
+  super_id        Int?    @default(0)
+  company_id      Int     @default(0)
+  distributor_id  Int     @default(0)
+  retailer_id     Int     @default(0)
+  admin_com       Float   @default(0) @db.Float
+  super_com       Float?  @default(0) @db.Float
+  company_com     Float   @default(0) @db.Float
+  distributor_com Float   @default(0) @db.Float
+  retailer_com    Float   @default(0) @db.Float
+  retailer_mode   Int     @default(0)
+  api_type        String  @default("DEFAULT") @db.VarChar(30)
+  api_com         Float   @default(0) @db.Float
+  api_mode        Int     @default(0)
+  cashback        Float   @default(0) @db.Float
+  refund          Int     @default(0)
+  op_id           Int?
+  circle_id       Int?
+  api_id          Int?
+  request_id      String  @default("0") @db.VarChar(50)
+  ts              BigInt? @default(0)
+  tds             Float?  @default(0) @db.Float
+  base_rate       Float?  @default(0) @db.Float
+  provider        String? @db.VarChar(100)
+  api_ref         String? @db.VarChar(100)
+  recorn          Int?    @default(0) @db.TinyInt
+  recharge_amount Float?  @db.Float
+
+  @@index([retailer_id, request_id], map: "idx_request")
+  @@index([retailer_id], map: "idx_retailer_id")
+  @@index([admin_id, api_type], map: "idx_statements_adminid_type")
+  @@index([api_type, provider, status, tid], map: "idx_statements_all")
+  @@index([amount], map: "idx_statements_amount")
+  @@index([amount, status], map: "idx_statements_amount_status")
+  @@index([api_type, date], map: "idx_statements_api_type_date")
+  @@index([api_type, api_id, api_tid], map: "idx_statements_api_type_id_tid")
+  @@index([api_type, retailer_id], map: "idx_statements_api_type_retailer_id")
+  @@index([api_type, status], map: "idx_statements_api_type_status")
+  @@index([api_type, status, mobile, date], map: "idx_statements_api_type_status_service_mobile_date")
+  @@index([circle_id, api_id], map: "idx_statements_circle_api_id")
+  @@index([date], map: "idx_statements_date")
+  @@index([date, api_type], map: "idx_statements_date_api_type")
+  @@index([date, api_type, retailer_id], map: "idx_statements_date_api_type_retailer")
+  @@index([date, ID], map: "idx_statements_date_id")
+  @@index([date, retailer_id], map: "idx_statements_date_retailer")
+  @@index([date, retailer_id], map: "idx_statements_date_retailer_id")
+  @@index([date, retailer_id, refund], map: "idx_statements_date_retailer_refund")
+  @@index([date, retailer_id, mode], map: "idx_statements_date_retailer_txn_type")
+  @@index([date, status, api_type], map: "idx_statements_date_status_api_type")
+  @@index([date, status, ID], map: "idx_statements_date_status_id")
+  @@index([date, time, status], map: "idx_statements_date_time_status")
+  @@index([ID], map: "idx_statements_id")
+  @@index([mobile], map: "idx_statements_mobile")
+  @@index([mobile, retailer_id], map: "idx_statements_mobile_retailer_id")
+  @@index([mobile, tid], map: "idx_statements_mobile_tid")
+  @@index([mobile, tid, date], map: "idx_statements_mobile_tid_date")
+  @@index([mode], map: "idx_statements_mode")
+  @@index([op_id, api_id, refund, ts], map: "idx_statements_op_api_refund_ts")
+  @@index([op_id, date], map: "idx_statements_op_id_date")
+  @@index([refund, api_type], map: "idx_statements_refund_api_type")
+  @@index([request_id], map: "idx_statements_request_id")
+  @@index([request_id, retailer_id], map: "idx_statements_request_id_retailer_id")
+  @@index([request_id, retailer_id, api_type], map: "idx_statements_request_id_retailer_id_api_type")
+  @@index([retailer_id, date], map: "idx_statements_retailer_date")
+  @@index([retailer_id], map: "idx_statements_retailer_id")
+  @@index([retailer_id, balance], map: "idx_statements_retailer_id_balance")
+  @@index([retailer_id, request_id], map: "idx_statements_retailer_request")
+  @@index([retailer_id, tid], map: "idx_statements_retailer_tid")
+  @@index([retailer_id, api_type], map: "idx_statements_retailerid_type")
+  @@index([status], map: "idx_statements_status")
+  @@index([status, date], map: "idx_statements_status_date")
+  @@index([status, retailer_id], map: "idx_statements_status_retailer_id")
+  @@index([tid], map: "idx_statements_tid")
+  @@index([tid, status], map: "idx_statements_tid_status")
+  @@index([ts], map: "idx_statements_ts")
+  @@index([date, retailer_id, refund], map: "idx_statements_txn_date_retailer_refund")
+  @@index([date, status, api_type, mobile, tid], map: "idx_statements_txn_date_status_service_mobile_tid")
+  @@index([status], map: "idx_status")
+  @@index([status, api_type], map: "idx_status_api_type")
+  @@index([tid, retailer_id], map: "idx_tid_retailer_id")
+  @@index([mobile], map: "statements_idx_mobile")
+  @@index([tid], map: "statements_idx_tid")
+}
+
+model statements_latest {
+  ID              BigInt  @id @default(autoincrement())
+  status          String  @db.VarChar(100)
+  message         String  @db.VarChar(300)
+  amount          Float   @db.Float
+  mode            Int     @default(1)
+  prev_bal        Float?
+  balance         Float?
+  tid             String  @default("-") @db.VarChar(100)
+  api_tid         String  @default("-") @db.VarChar(50)
+  channel         String  @default("-") @db.VarChar(20)
+  operator_name   String  @default("-") @db.VarChar(100)
+  customer_name   String  @default("-") @db.VarChar(50)
+  account         String  @default("-") @db.VarChar(50)
+  mobile          String  @default("-") @db.VarChar(12)
+  date            String  @db.VarChar(10)
+  time            String  @db.VarChar(10)
+  admin_id        Int     @default(0)
+  super_id        Int?    @default(0)
+  company_id      Int     @default(0)
+  distributor_id  Int     @default(0)
+  retailer_id     Int     @default(0)
+  admin_com       Float   @default(0) @db.Float
+  super_com       Float?  @default(0) @db.Float
+  company_com     Float   @default(0) @db.Float
+  distributor_com Float   @default(0) @db.Float
+  retailer_com    Float   @default(0) @db.Float
+  retailer_mode   Int     @default(0)
+  api_type        String  @default("DEFAULT") @db.VarChar(30)
+  api_com         Float   @default(0) @db.Float
+  api_mode        Int     @default(0)
+  cashback        Float   @default(0) @db.Float
+  refund          Int     @default(0)
+  op_id           Int?
+  circle_id       Int?
+  api_id          Int?
+  request_id      String  @default("0") @db.VarChar(50)
+  ts              BigInt? @default(0)
+  tds             Float?  @default(0) @db.Float
+  base_rate       Float?  @default(0) @db.Float
+  provider        String? @db.VarChar(100)
+  api_ref         String? @db.VarChar(100)
+  recorn          Int?    @default(0) @db.TinyInt
+  recharge_amount Float?  @db.Float
+  parent_tid      String? @db.VarChar(100)
+  merchant_id     Int?    @default(0)
+
+  @@index([date], map: "idx_date")
+  @@index([ID, refund, api_type], map: "idx_id_refund_apitype")
+  @@index([mobile], map: "idx_mobile")
+  @@index([mobile, date, operator_name], map: "idx_mobile_date_operator")
+  @@index([refund, api_type, ID], map: "idx_refund_apitype_id")
+  @@index([retailer_id, refund, api_type], map: "idx_refund_check")
+  @@index([retailer_id, request_id], map: "idx_request")
+  @@index([retailer_id, date], map: "idx_retailer_date")
+  @@index([retailer_id], map: "idx_retailer_id")
+  @@index([admin_id, api_type], map: "idx_statements_adminid_type")
+  @@index([api_type, provider, status, tid], map: "idx_statements_all")
+  @@index([amount], map: "idx_statements_amount")
+  @@index([amount, status], map: "idx_statements_amount_status")
+  @@index([api_type, date], map: "idx_statements_api_type_date")
+  @@index([api_type, api_id, api_tid], map: "idx_statements_api_type_id_tid")
+  @@index([api_type, retailer_id], map: "idx_statements_api_type_retailer_id")
+  @@index([api_type, status], map: "idx_statements_api_type_status")
+  @@index([api_type, status, mobile, date], map: "idx_statements_api_type_status_service_mobile_date")
+  @@index([circle_id, api_id], map: "idx_statements_circle_api_id")
+  @@index([date], map: "idx_statements_date")
+  @@index([date, api_type], map: "idx_statements_date_api_type")
+  @@index([date, api_type, retailer_id], map: "idx_statements_date_api_type_retailer")
+  @@index([date, ID], map: "idx_statements_date_id")
+  @@index([date, retailer_id], map: "idx_statements_date_retailer")
+  @@index([date, retailer_id], map: "idx_statements_date_retailer_id")
+  @@index([date, retailer_id, refund], map: "idx_statements_date_retailer_refund")
+  @@index([date, retailer_id, mode], map: "idx_statements_date_retailer_txn_type")
+  @@index([date, status, api_type], map: "idx_statements_date_status_api_type")
+  @@index([date, status, ID], map: "idx_statements_date_status_id")
+  @@index([date, time, status], map: "idx_statements_date_time_status")
+  @@index([ID], map: "idx_statements_id")
+  @@index([mobile], map: "idx_statements_mobile")
+  @@index([mobile, retailer_id], map: "idx_statements_mobile_retailer_id")
+  @@index([mobile, tid], map: "idx_statements_mobile_tid")
+  @@index([mobile, tid, date], map: "idx_statements_mobile_tid_date")
+  @@index([mode], map: "idx_statements_mode")
+  @@index([op_id, api_id, refund, ts], map: "idx_statements_op_api_refund_ts")
+  @@index([op_id, date], map: "idx_statements_op_id_date")
+  @@index([refund, api_type], map: "idx_statements_refund_api_type")
+  @@index([request_id], map: "idx_statements_request_id")
+  @@index([request_id, retailer_id], map: "idx_statements_request_id_retailer_id")
+  @@index([request_id, retailer_id, api_type], map: "idx_statements_request_id_retailer_id_api_type")
+  @@index([retailer_id, date], map: "idx_statements_retailer_date")
+  @@index([retailer_id], map: "idx_statements_retailer_id")
+  @@index([retailer_id, balance], map: "idx_statements_retailer_id_balance")
+  @@index([retailer_id, request_id], map: "idx_statements_retailer_request")
+  @@index([retailer_id, tid], map: "idx_statements_retailer_tid")
+  @@index([retailer_id, api_type], map: "idx_statements_retailerid_type")
+  @@index([status], map: "idx_statements_status")
+  @@index([status, date], map: "idx_statements_status_date")
+  @@index([status, retailer_id], map: "idx_statements_status_retailer_id")
+  @@index([tid], map: "idx_statements_tid")
+  @@index([tid, status], map: "idx_statements_tid_status")
+  @@index([ts], map: "idx_statements_ts")
+  @@index([date, retailer_id, refund], map: "idx_statements_txn_date_retailer_refund")
+  @@index([date, status, api_type, mobile, tid], map: "idx_statements_txn_date_status_service_mobile_tid")
+  @@index([status], map: "idx_status")
+  @@index([status, api_type], map: "idx_status_api_type")
+  @@index([status, date], map: "idx_status_date")
+  @@index([tid, date], map: "idx_tid_date")
+  @@index([tid, retailer_id], map: "idx_tid_retailer_id")
+  @@index([mobile], map: "statements_idx_mobile")
+  @@index([tid], map: "statements_idx_tid")
+}
+
+model swipelinc {
+  ID        String?  @db.Text
+  onboarded Boolean?
+  mid       BigInt   @id @unique(map: "mid") @default(autoincrement()) @db.UnsignedBigInt
+}
+
+model transactions_old {
+  Date                      String?  @db.VarChar(255)
+  Time                      String?  @db.VarChar(255)
+  Portal                    String?  @db.VarChar(255)
+  Transaction_ID            String?  @db.VarChar(255)
+  Transaction_Type          String?  @db.VarChar(255)
+  Provider_Name             String?  @db.VarChar(255)
+  Status                    String?  @db.VarChar(255)
+  Dr_CR                     String?  @db.VarChar(255)
+  Amount                    String?  @db.VarChar(255)
+  Txn_Amt                   Float?   @db.Float
+  Txn_Fees_Gross            String?  @db.VarChar(255)
+  Txn_Fees_Net              String?  @db.VarChar(255)
+  GST_ON_FEE                String?  @db.VarChar(255)
+  State                     String?  @db.VarChar(255)
+  PAN_No                    String?  @db.VarChar(255)
+  GST_No                    String?  @db.VarChar(255)
+  Retailer_Name             String?  @db.VarChar(255)
+  Retailer_ID               String?  @db.VarChar(255)
+  Retailer_Commission_Gross String?  @db.VarChar(255)
+  Retailer_TDS              String?  @db.VarChar(255)
+  Retailer_Commission_Net   String?  @db.VarChar(255)
+  Retailer_Discount         String?  @db.VarChar(255)
+  Dist_Name                 String?  @db.VarChar(255)
+  Dist_ID                   String?  @db.VarChar(255)
+  Dist_Commission_Gross     String?  @db.VarChar(255)
+  Dist_Commission_Net       String?  @db.VarChar(255)
+  Dist_TDS                  String?  @db.VarChar(255)
+  MD_Name                   String?  @db.VarChar(255)
+  MD_ID                     String?  @db.VarChar(255)
+  MD_Commission_Gross       String?  @db.VarChar(255)
+  MD_Commission_Net         String?  @db.VarChar(255)
+  MD_TDS                    String?  @db.VarChar(255)
+  Provider_Charges_Gross    String?  @db.VarChar(255)
+  Provider_Charges_Net      String?  @db.VarChar(255)
+  GST_PROVIDER              String?  @db.VarChar(100)
+  Provider_Revenue_Sharing  String?  @db.VarChar(255)
+  Admin_Net                 Decimal? @db.Decimal(10, 2)
+  ID                        Int      @id @default(autoincrement())
+
+  @@index([ID], map: "idx_transactions_old_ID")
+}
+
+model transactions_stm_backup {
+  ID              BigInt  @id @default(autoincrement())
+  status          String  @db.VarChar(100)
+  message         String  @db.VarChar(300)
+  amount          Float   @db.Float
+  mode            Int     @default(1)
+  prev_bal        Float?
+  balance         Float?
+  tid             String  @db.VarChar(25)
+  api_tid         String  @default("-") @db.VarChar(50)
+  channel         String  @default("-") @db.VarChar(20)
+  operator_name   String  @default("-") @db.VarChar(100)
+  customer_name   String  @default("-") @db.VarChar(50)
+  account         String  @default("-") @db.VarChar(50)
+  mobile          String  @default("-") @db.VarChar(12)
+  date            String  @db.VarChar(10)
+  time            String  @db.VarChar(10)
+  admin_id        Int     @default(0)
+  super_id        Int?    @default(0)
+  company_id      Int     @default(0)
+  distributor_id  Int     @default(0)
+  retailer_id     Int     @default(0)
+  admin_com       Float   @default(0) @db.Float
+  super_com       Float?  @default(0) @db.Float
+  company_com     Float   @default(0) @db.Float
+  distributor_com Float   @default(0) @db.Float
+  retailer_com    Float   @default(0) @db.Float
+  retailer_mode   Int     @default(0)
+  api_type        String  @default("DEFAULT") @db.VarChar(30)
+  api_com         Float   @default(0) @db.Float
+  api_mode        Int     @default(0)
+  cashback        Float   @default(0) @db.Float
+  refund          Int     @default(0)
+  op_id           Int?
+  circle_id       Int?
+  api_id          Int?
+  request_id      String  @default("0") @db.VarChar(50)
+  ts              BigInt? @default(0)
+  tds             Float?  @default(0) @db.Float
+  base_rate       Float?  @default(0) @db.Float
+  provider        String? @db.VarChar(100)
+  api_ref         String? @db.VarChar(100)
+  recorn          Int?    @default(0) @db.TinyInt
+
+  @@index([ID], map: "idx_transactions_stm_backup_ID")
+}
+
+model transactions_stm_backup2 {
+  ID              BigInt  @id @default(autoincrement())
+  status          String  @db.VarChar(100)
+  message         String  @db.VarChar(300)
+  amount          Float   @db.Float
+  mode            Int     @default(1)
+  prev_bal        Float?
+  balance         Float?
+  tid             String  @db.VarChar(25)
+  api_tid         String  @default("-") @db.VarChar(50)
+  channel         String  @default("-") @db.VarChar(20)
+  operator_name   String  @default("-") @db.VarChar(100)
+  customer_name   String  @default("-") @db.VarChar(50)
+  account         String  @default("-") @db.VarChar(50)
+  mobile          String  @default("-") @db.VarChar(12)
+  date            String  @db.VarChar(10)
+  time            String  @db.VarChar(10)
+  admin_id        Int     @default(0)
+  super_id        Int?    @default(0)
+  company_id      Int     @default(0)
+  distributor_id  Int     @default(0)
+  retailer_id     Int     @default(0)
+  admin_com       Float   @default(0) @db.Float
+  super_com       Float?  @default(0) @db.Float
+  company_com     Float   @default(0) @db.Float
+  distributor_com Float   @default(0) @db.Float
+  retailer_com    Float   @default(0) @db.Float
+  retailer_mode   Int     @default(0)
+  api_type        String  @default("DEFAULT") @db.VarChar(30)
+  api_com         Float   @default(0) @db.Float
+  api_mode        Int     @default(0)
+  cashback        Float   @default(0) @db.Float
+  refund          Int     @default(0)
+  op_id           Int?
+  circle_id       Int?
+  api_id          Int?
+  request_id      String  @default("0") @db.VarChar(50)
+  ts              BigInt? @default(0)
+  tds             Float?  @default(0) @db.Float
+  base_rate       Float?  @default(0) @db.Float
+  provider        String? @db.VarChar(100)
+  api_ref         String? @db.VarChar(100)
+  recorn          Int?    @default(0) @db.TinyInt
+
+  @@index([ID], map: "idx_transactions_stm_backup2_ID")
+}
+
+model unlimit_refund_transactions {
+  ID                         Int       @id @default(autoincrement())
+  partner_id                 Int       @default(0)
+  callback_time              DateTime  @default(now()) @db.Timestamp(0)
+  payment_method             String    @db.VarChar(50)
+  merchant_order_id          String    @db.VarChar(100)
+  merchant_order_description String?   @db.Text
+  customer_email             String?   @db.VarChar(255)
+  customer_phone             String?   @db.VarChar(20)
+  customer_user_agent        String?   @db.Text
+  customer_ip_country        String?   @db.VarChar(2)
+  customer_ip                String?   @db.VarChar(45)
+  customer_locale            String?   @db.VarChar(20)
+  authentication_eci         String?   @db.VarChar(10)
+  refund_id                  String    @db.VarChar(50)
+  refund_status              String    @default("PENDING") @db.VarChar(50)
+  refund_amount              Decimal   @db.Decimal(15, 2)
+  refund_currency            String    @db.VarChar(3)
+  refund_created             DateTime  @default(now()) @db.Timestamp(0)
+  refund_auth_code           String?   @db.VarChar(50)
+  refund_type                String    @db.VarChar(50)
+  refund_arn                 String    @db.VarChar(50)
+  refund_reason              String    @db.VarChar(50)
+  card_masked_pan            String?   @db.VarChar(20)
+  card_issuing_country_code  String?   @db.VarChar(2)
+  card_issuer                String?   @db.VarChar(100)
+  card_brand                 String?   @db.VarChar(50)
+  card_type                  String?   @db.VarChar(50)
+  card_holder                String?   @db.VarChar(100)
+  created_at                 DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([ID], map: "idx_unlimit_refund_transactions_id")
+}
+
+model unlimit_transactions {
+  ID                         Int       @id @default(autoincrement())
+  partner_id                 Int       @default(0)
+  callback_time              DateTime  @default(now()) @db.Timestamp(0)
+  payment_method             String    @db.VarChar(50)
+  merchant_order_id          String    @db.VarChar(100)
+  merchant_order_description String?   @db.Text
+  customer_email             String?   @db.VarChar(255)
+  customer_phone             String?   @db.VarChar(20)
+  customer_user_agent        String?   @db.Text
+  customer_ip_country        String?   @db.VarChar(2)
+  customer_ip                String?   @db.VarChar(45)
+  customer_locale            String?   @db.VarChar(20)
+  authentication_eci         String?   @db.VarChar(10)
+  payment_id                 String    @db.VarChar(50)
+  payment_status             String    @default("PENDING") @db.VarChar(50)
+  payment_amount             Decimal   @db.Decimal(15, 2)
+  recharge_amount            Decimal?  @default(0.00) @db.Decimal(15, 2)
+  payment_currency           String    @db.VarChar(3)
+  payment_created            DateTime  @default(now()) @db.Timestamp(0)
+  payment_auth_code          String?   @db.VarChar(50)
+  payment_type               String    @db.VarChar(50)
+  card_masked_pan            String?   @db.VarChar(20)
+  card_issuing_country_code  String?   @db.VarChar(2)
+  card_issuer                String?   @db.VarChar(100)
+  card_brand                 String?   @db.VarChar(50)
+  card_type                  String?   @db.VarChar(50)
+  card_holder                String?   @db.VarChar(100)
+  refund_stat                Int?      @default(0)
+  created_at                 DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([ID], map: "idx_unlimit_transactions_id")
+}
+
+model upi_user_npst {
+  ID              Int     @id @default(autoincrement())
+  vpa             String? @db.VarChar(255)
+  source          String? @db.VarChar(255)
+  terminal_id     String? @db.VarChar(255)
+  merchant_id     String? @db.VarChar(255)
+  sub_merchant_id String? @db.VarChar(255)
+  minAmount       Int?
+  qrString        String? @db.Text
+  status          String  @default("PENDING") @db.VarChar(50)
+  user_id         Int?
+
+  @@index([ID], map: "idx_upi_user_npst_ID")
+}
+
+model users_temp {
+  ID          Int  @id @default(autoincrement())
+  txn_count   Int? @default(0)
+  retailer_id Int? @default(0)
+  recorn      Int? @default(0)
+
+  @@index([ID], map: "idx_users_temp_ID")
+}
+
+model users_transfer_limit {
+  ID        Int     @id @default(autoincrement())
+  max_limit Float?  @db.Float
+  till_date String? @db.VarChar(12)
+  user_id   Int?
+  active    Boolean
+
+  @@index([ID], map: "idx_users_transfer_limit_ID")
+}
+
+model wallet_recharge_comm {
+  ID              Int      @id @default(autoincrement())
+  user_id         Int
+  amt_from        Decimal? @default(0.000) @db.Decimal(10, 3)
+  amt_to          Decimal? @default(0.000) @db.Decimal(10, 3)
+  operator_id     Int?
+  com_type        String?  @db.VarChar(45)
+  super_com       Decimal? @db.Decimal(10, 3)
+  service_charge  Decimal? @db.Decimal(10, 3)
+  retailer_charge Decimal? @db.Decimal(10, 3)
+  retailer_com    Decimal? @db.Decimal(10, 3)
+  dist            Decimal? @db.Decimal(10, 3)
+  company         Decimal? @db.Decimal(10, 3)
+  super           Decimal? @db.Decimal(10, 3)
+  admin           Decimal? @db.Decimal(10, 3)
+  api             Decimal? @db.Decimal(10, 3)
+
+  @@index([ID], map: "idx_wallet_recharge_comm_ID")
 }
